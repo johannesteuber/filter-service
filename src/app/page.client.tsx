@@ -1,8 +1,9 @@
 "use client"
 
-import { filter } from "@/utils/filter";
+import {filter, JsonObject} from "@/utils/filter";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import type { editor } from "monaco-editor";
 
 // Dynamically import Monaco Editor to avoid SSR issues
 const MonacoEditor = dynamic(
@@ -13,9 +14,9 @@ const MonacoEditor = dynamic(
 const HomeClient = () => {
     const [accessFile, setAccessFile] = useState<string>("");
     const [apiFile, setAPIFile] = useState<string>("");
-    const [output, setOutput] = useState<any>({});
+    const [output, setOutput] = useState<JsonObject>({});
     const [error, setError] = useState<string>("");
-    const [theme, setTheme] = useState("light");
+    const [theme, setTheme] = useState<"light" | "vs-dark">("light");
 
     // Detect theme
     useEffect(() => {
@@ -24,7 +25,7 @@ const HomeClient = () => {
             setTheme(isDark ? "vs-dark" : "light");
 
             const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-            const handleChange = (e) => {
+            const handleChange = (e: MediaQueryListEvent) => {
                 setTheme(e.matches ? "vs-dark" : "light");
             };
 
@@ -49,53 +50,48 @@ const HomeClient = () => {
             setError("");
         } catch (e) {
             console.error(e);
-            setError(e.message || "Invalid JSON input");
+            setError(e instanceof Error ? e.message : "Invalid JSON input");
         }
     }, [accessFile, apiFile]);
 
-    const editorOptions = {
+    const editorOptions: editor.IEditorOptions = {
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
         automaticLayout: true,
         formatOnPaste: true,
         wordWrap: "on",
+        padding: { top: 8 },
     };
 
     return (
         <div className="max-w-6xl mx-auto p-6 min-h-screen">
-            <h1 className="text-3xl font-bold mb-6">Filter Service</h1>
+            <h1 className="text-3xl font-bold mb-6">Filter Service Prototype v1 (18.05.2023)</h1>
 
             <div className="space-y-6">
                 <div className="space-y-2">
                     <p className="font-medium">Access File</p>
-                    <div className="h-[75vh] border border-gray-300 rounded-md shadow-sm overflow-hidden">
+                    <div className="h-64 border border-gray-300 rounded-md shadow-sm overflow-hidden">
                         <MonacoEditor
                             height="100%"
                             language="json"
                             value={accessFile}
                             onChange={(value) => setAccessFile(value || "")}
                             theme={theme}
-                            options={{
-                                ...editorOptions,
-                                padding: { top: 8 },
-                            }}
+                            options={editorOptions}
                         />
                     </div>
                 </div>
 
                 <div className="space-y-2">
                     <p className="font-medium">API File</p>
-                    <div className="h-[75vh] border border-gray-300 rounded-md shadow-sm overflow-hidden">
+                    <div className="h-64 border border-gray-300 rounded-md shadow-sm overflow-hidden">
                         <MonacoEditor
                             height="100%"
                             language="json"
                             value={apiFile}
                             onChange={(value) => setAPIFile(value || "")}
                             theme={theme}
-                            options={{
-                                ...editorOptions,
-                                padding: { top: 8 },
-                            }}
+                            options={editorOptions}
                         />
                     </div>
                 </div>
@@ -106,7 +102,7 @@ const HomeClient = () => {
                     <p className="font-medium">Output</p>
                     {error && <p className="text-red-500 text-sm">{error}</p>}
                 </div>
-                <div className="h-[75vh] border border-gray-300 rounded-md shadow-sm overflow-hidden">
+                <div className="h-96 border border-gray-300 rounded-md shadow-sm overflow-hidden">
                     <MonacoEditor
                         height="100%"
                         language="json"
@@ -115,7 +111,6 @@ const HomeClient = () => {
                         options={{
                             ...editorOptions,
                             readOnly: true,
-                            padding: { top: 8 },
                         }}
                     />
                 </div>

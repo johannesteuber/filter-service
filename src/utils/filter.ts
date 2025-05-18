@@ -15,18 +15,33 @@ export type AccessFile = {
     access_rules: AccessRule[]
 }
 
+// Define a recursive type that can represent any nested object structure
+type JsonValue = string | number | boolean | null | undefined | JsonObject | JsonArray;
+export type JsonObject = { [key: string]: JsonValue };
+type JsonArray = JsonValue[];
 
+// Adding optional properties that we know might exist
+export interface FilterableObject extends JsonObject {
+    id?: string;
+    ingredientId?: string;
+}
 
-export const filter = (accessFull: AccessFile, obj: any, parentPath: string, objRef: any, index?: number) => {
+export const filter = (
+    accessFull: AccessFile,
+    obj: FilterableObject,
+    parentPath: string,
+    objRef: JsonObject,
+    index?: number
+) => {
     for (const [key, value] of Object.entries(obj)) {
         const path = [`${parentPath}${index || index === 0 ? `[${index}]` : ""}`, key].filter(Boolean).join(".")
 
         if (Array.isArray(value)) {
             for (let i = 0; i < value.length; i++) {
-                filter(accessFull, value[i], path, objRef[key][i], i)
+                filter(accessFull, value[i] as FilterableObject, path, objRef[key] as JsonObject, i)
             }
         } else if (typeof value === 'object' && value !== null) {
-            filter(accessFull ,value, path, objRef[key])
+            filter(accessFull, value as FilterableObject, path, objRef[key] as JsonObject)
         } else {
             const rule = accessFull.access_rules.find(rule => {
                 if (parentPath) {
