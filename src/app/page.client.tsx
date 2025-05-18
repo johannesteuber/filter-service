@@ -1,9 +1,10 @@
 "use client";
 
-import { filter, Json } from "@/utils/filter";
+import { filter } from "@/utils/filter";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import type { editor } from "monaco-editor";
+import { Json } from "@/utils/types";
 
 // Dynamically import Monaco Editor to avoid SSR issues
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
@@ -118,7 +119,7 @@ const HomeClient = () => {
 
       const output = JSON.parse(JSON.stringify(apiJSON));
       const startTime = performance.now();
-      const { logs } = filter([], accessJSON, apiJSON, "", output);
+      const { logs } = filter([], accessJSON, apiJSON, output, "");
       const endTime = performance.now();
       setFilterTime(endTime - startTime); // Store the duration
       setLogs(logs);

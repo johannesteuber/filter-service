@@ -1,37 +1,20 @@
-type AccessRule = {
-  objectId: string;
-  objectEntityClass: string;
-  identityId: string;
-  path?: string;
-  identityProperties: {
-    readProperties: string[];
-    writeProperties: string[];
-    shareReadProperties: string[];
-    shareWriteProperties: string[];
-  };
-};
+import { AccessFile, Json } from "@/utils/types";
 
-export type AccessFile = {
-  access_rules: AccessRule[];
-};
-
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | {
-      [key: string]: Json;
-    }
-  | Json[];
-
+/**
+ * Filters the given object based on the access file rules.
+ * @param logs An array to store logs.
+ * @param access The access file.
+ * @param obj The object to filter.
+ * @param parentPath The parent path of the object.
+ * @param filteredObjRef The reference to the filtered object.
+ * @param index The index of the object in the parent array.
+ */
 export const filter = (
   logs: string[],
-  accessFull: AccessFile,
+  access: AccessFile,
   obj: Json,
+  filteredObjRef: Json,
   parentPath: string,
-  objRef: Json,
   index?: number,
 ) => {
   for (const [key, value] of Object.entries(obj ?? {})) {
@@ -45,21 +28,21 @@ export const filter = (
     if (Array.isArray(value)) {
       for (let i = 0; i < value.length; i++) {
         if (
-          typeof objRef !== "object" ||
-          Array.isArray(objRef) ||
-          !Array.isArray(objRef?.[key])
+          typeof filteredObjRef !== "object" ||
+          Array.isArray(filteredObjRef) ||
+          !Array.isArray(filteredObjRef?.[key])
         ) {
           continue;
         }
-        filter(logs, accessFull, value[i], path, objRef[key][i], i);
+        filter(logs, access, value[i], filteredObjRef[key][i], path, i);
       }
     } else if (typeof value === "object" && value !== null) {
-      if (typeof objRef !== "object" || Array.isArray(objRef)) {
+      if (typeof filteredObjRef !== "object" || Array.isArray(filteredObjRef)) {
         continue;
       }
-      filter(logs, accessFull, value, path, objRef?.[key]);
+      filter(logs, access, value, filteredObjRef?.[key], path);
     } else {
-      const rule = accessFull.access_rules.find((rule) => {
+      const rule = access.access_rules.find((rule) => {
         if (parentPath) {
           const correctPath = rule.path === parentPath;
           if (index || index === 0) {
@@ -82,11 +65,15 @@ export const filter = (
         continue;
       }
 
-      if (!objRef || typeof objRef !== "object" || Array.isArray(objRef)) {
+      if (
+        !filteredObjRef ||
+        typeof filteredObjRef !== "object" ||
+        Array.isArray(filteredObjRef)
+      ) {
         continue;
       }
 
-      objRef[key] = null;
+      filteredObjRef[key] = null;
       logs.push(`remove ${path} due to missing read access`);
     }
   }
