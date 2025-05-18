@@ -7,11 +7,11 @@ const JSON_FILES_DIRECTORY = path.join(process.cwd(), 'data', 'json');
 
 export async function GET(
     request: Request,
-    { params }: { params: { filename: string } }
+    { params }: { params: Promise<{ filename: string }> }
 ) {
     try {
         // Properly await the params
-        const filename = params.filename;
+        const filename = (await params).filename;
 
         // Sanitize the filename to prevent directory traversal attacks
         const sanitizedFilename = filename.replace(/\.\./g, '').replace(/[^a-zA-Z0-9_\-\.]/g, '');
@@ -39,6 +39,7 @@ export async function GET(
         try {
             await fs.access(filePath);
         } catch (e) {
+            console.error(e);
             return NextResponse.json(
                 { error: `File not found: ${fullFilename}. Looking in: ${JSON_FILES_DIRECTORY}` },
                 { status: 404 }
