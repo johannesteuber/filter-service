@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "id": "productBatchId",
+  "properties": {
+    "certificates": {
+      "type": "array",
+      "id": "id"
+    },
+    "productOwner": {
+      "type": "object",
+      "id": "id",
+      "properties": {
+        "address": {
+          "type": "object",
+          "id": "id"
+        }
+      }
+    },
+    "ingredients": {
+      "type": "array",
+      "id": "ingredientId"
+    },
+    "productBatchSteps": {
+      "type": "array",
+      "id": "id",
+      "properties": {
+        "address": {
+          "type": "object",
+          "id": "id"
+        },
+        "stepEntries": {
+          "type": "array",
+          "id": "id"
+        }
+      }
+    }
+  }
+}

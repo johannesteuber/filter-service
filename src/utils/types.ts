@@ -21,7 +21,26 @@ export type Json =
   | boolean
   | null
   | undefined
-  | {
-      [key: string]: Json;
-    }
+  | JSONObject
   | Json[];
+
+export type JSONObject = {
+  [key: string]: Json;
+}
+
+export type Schema =
+  | ObjectSchema
+  | ArraySchema
+
+
+type ObjectSchema = {
+  type: "object";
+  id: string;
+  properties?: Record<string, Schema>;
+};
+
+type ArraySchema = {
+  type: "array";
+  id: string;
+  properties?: Record<string, Schema>;
+};

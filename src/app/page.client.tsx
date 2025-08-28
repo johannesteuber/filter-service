@@ -13,13 +13,17 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 
 const HomeClient = () => {
   const [accessFileURL, setAccessFileURL] = useState<string>(
-    "/api/files/access_full",
+    "/api/files/access_full"
   );
   const [apiFileURL, setAPIFileURL] = useState<string>(
-    "/api/files/productpassport",
+    "/api/files/productpassport"
+  );
+  const [apiSchemaFileURL, setAPISchemaFileURL] = useState<string>(
+    "/api/files/productpassport.schema"
   );
   const [accessFile, setAccessFile] = useState<string>("");
   const [apiFile, setAPIFile] = useState<string>("");
+  const [apiSchemaFile, setAPISchemaFile] = useState<string>("");
   const [output, setOutput] = useState<Json>({});
   const [error, setError] = useState<string>("");
   const [theme, setTheme] = useState<"light" | "vs-dark">("light");
@@ -27,7 +31,7 @@ const HomeClient = () => {
     {
       access: false,
       api: false,
-    },
+    }
   );
   const [logs, setLogs] = useState<string[]>([]);
   const [filterTime, setFilterTime] = useState<number | null>(null); // Use null initially
@@ -56,7 +60,7 @@ const HomeClient = () => {
         const accessResponse = await fetch(`${accessFileURL}`);
         if (!accessResponse.ok) {
           throw new Error(
-            `Failed to fetch access file: ${accessResponse.statusText}`,
+            `Failed to fetch access file: ${accessResponse.statusText}`
           );
         }
         const accessData = await accessResponse.json();
@@ -65,7 +69,7 @@ const HomeClient = () => {
       } catch (err) {
         console.error("Error fetching access file:", err);
         setError(
-          err instanceof Error ? err.message : "Failed to fetch access file",
+          err instanceof Error ? err.message : "Failed to fetch access file"
         );
       } finally {
         setIsLoading((prev) => ({ ...prev, access: false }));
@@ -83,7 +87,7 @@ const HomeClient = () => {
         const apiResponse = await fetch(`${apiFileURL}`);
         if (!apiResponse.ok) {
           throw new Error(
-            `Failed to fetch API file: ${apiResponse.statusText}`,
+            `Failed to fetch API file: ${apiResponse.statusText}`
           );
         }
         const apiData = await apiResponse.json();
@@ -92,7 +96,7 @@ const HomeClient = () => {
       } catch (err) {
         console.error("Error fetching API file:", err);
         setError(
-          err instanceof Error ? err.message : "Failed to fetch API file",
+          err instanceof Error ? err.message : "Failed to fetch API file"
         );
       } finally {
         setIsLoading((prev) => ({ ...prev, api: false }));
@@ -102,10 +106,37 @@ const HomeClient = () => {
     fetchApiFile();
   }, [apiFileURL]); // Only depends on apiFileURL
 
+  // Fetch API file only when apiFileURL changes
+  useEffect(() => {
+    const fetchApiSchemaFile = async () => {
+      setIsLoading((prev) => ({ ...prev, api: true }));
+      try {
+        const apiResponse = await fetch(`${apiSchemaFileURL}`);
+        if (!apiResponse.ok) {
+          throw new Error(
+            `Failed to fetch API schema file: ${apiResponse.statusText}`
+          );
+        }
+        const apiData = await apiResponse.json();
+        setAPISchemaFile(JSON.stringify(apiData, null, 2));
+        setError("");
+      } catch (err) {
+        console.error("Error fetching API schema file:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch API schema file"
+        );
+      } finally {
+        setIsLoading((prev) => ({ ...prev, api: false }));
+      }
+    };
+
+    fetchApiSchemaFile();
+  }, [apiSchemaFileURL]); // Only depends on apiFileURL
+
   // Process and filter the data when the files change
   useEffect(() => {
     try {
-      if (!accessFile.trim() || !apiFile.trim()) {
+      if (!accessFile.trim() || !apiFile.trim() || !apiSchemaFile.trim()) {
         setOutput({});
         setError("");
         setLogs([]); // Clear logs when files are empty
@@ -115,11 +146,18 @@ const HomeClient = () => {
 
       const accessJSON = JSON.parse(accessFile);
       const apiJSON = JSON.parse(apiFile);
-      console.log(accessJSON, apiJSON);
+      const schemaJSON = JSON.parse(apiSchemaFile);
 
-      const output = JSON.parse(JSON.stringify(apiJSON));
       const startTime = performance.now();
-      const { logs } = filter([], accessJSON, apiJSON, output, "");
+      // const ids = analyzeApiResult(apiJSON, [], schemaJSON);
+
+      // TODO: fetch access rules with the ids
+
+      const { obj: output, logs } = filter({
+        access: accessJSON,
+        obj: apiJSON,
+        schema: schemaJSON,
+      });
       const endTime = performance.now();
       setFilterTime(endTime - startTime); // Store the duration
       setLogs(logs);
@@ -131,7 +169,7 @@ const HomeClient = () => {
       setLogs([]); // Clear logs on error
       setFilterTime(null); // Clear filter time on error
     }
-  }, [accessFile, apiFile]);
+  }, [accessFile, apiFile, apiSchemaFile]);
 
   const editorOptions: editor.IEditorOptions = {
     minimap: { enabled: false },
@@ -187,6 +225,22 @@ const HomeClient = () => {
             />
           </div>
         </div>
+
+        <div className="flex-1 space-y-2">
+          <label htmlFor="apiFileURL" className="font-medium">
+            API Schema File URL
+          </label>
+          <div className="flex">
+            <input
+              id="apiSchemaURL"
+              type="text"
+              value={apiSchemaFileURL}
+              onChange={(e) => setAPISchemaFileURL(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              placeholder="/api/files/productpassport.schema"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -197,7 +251,7 @@ const HomeClient = () => {
               <p className="text-blue-500 text-sm">Loading...</p>
             )}
           </div>
-          <div className="h-64 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
+          <div className="h-128 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
             <MonacoEditor
               height="100%"
               language="json"
@@ -221,12 +275,36 @@ const HomeClient = () => {
               <p className="text-blue-500 text-sm">Loading...</p>
             )}
           </div>
-          <div className="h-64 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
+          <div className="h-128 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
             <MonacoEditor
               height="100%"
               language="json"
               value={apiFile}
               onChange={(value) => setAPIFile(value || "")}
+              theme={theme}
+              options={editorOptions}
+              loading={
+                <div className="flex items-center justify-center h-full dark:bg-gray-800 dark:text-gray-400">
+                  Loading editor...
+                </div>
+              }
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <p className="font-medium">API Schema File</p>
+            {isLoading.api && (
+              <p className="text-blue-500 text-sm">Loading...</p>
+            )}
+          </div>
+          <div className="h-128 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
+            <MonacoEditor
+              height="100%"
+              language="json"
+              value={apiSchemaFile}
+              onChange={(value) => setAPISchemaFile(value || "")}
               theme={theme}
               options={editorOptions}
               loading={
@@ -251,7 +329,7 @@ const HomeClient = () => {
           </div>
           {error && <p className="text-red-500 text-sm">{error}</p>}
         </div>
-        <div className="h-96 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
+        <div className="h-128 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
           <MonacoEditor
             height="100%"
             language="json"
