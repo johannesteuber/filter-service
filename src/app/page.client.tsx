@@ -12,27 +12,22 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 });
 
 const HomeClient = () => {
-  const [accessFileURL, setAccessFileURL] = useState<string>(
-    "/api/files/access_full"
-  );
-  const [apiFileURL, setAPIFileURL] = useState<string>(
-    "/api/files/productpassport"
-  );
-  const [apiSchemaFileURL, setAPISchemaFileURL] = useState<string>(
-    "/api/files/productpassport.schema"
-  );
+  const [accessFileURL, setAccessFileURL] = useState<string>("/api/files/access_full");
+  const [apiFileURL, setAPIFileURL] = useState<string>("/api/files/productpassport");
+  const [apiSchemaFileURL, setAPISchemaFileURL] = useState<string>("/api/files/productpassport.schema");
   const [accessFile, setAccessFile] = useState<string>("");
   const [apiFile, setAPIFile] = useState<string>("");
   const [apiSchemaFile, setAPISchemaFile] = useState<string>("");
   const [output, setOutput] = useState<Json>({});
   const [error, setError] = useState<string>("");
   const [theme, setTheme] = useState<"light" | "vs-dark">("light");
-  const [isLoading, setIsLoading] = useState<{ access: boolean; api: boolean }>(
-    {
-      access: false,
-      api: false,
-    }
-  );
+  const [isLoading, setIsLoading] = useState<{
+    access: boolean;
+    api: boolean;
+  }>({
+    access: false,
+    api: false,
+  });
   const [logs, setLogs] = useState<string[]>([]);
   const [filterTime, setFilterTime] = useState<number | null>(null); // Use null initially
 
@@ -55,24 +50,26 @@ const HomeClient = () => {
   // Fetch access file only when accessFileURL changes
   useEffect(() => {
     const fetchAccessFile = async () => {
-      setIsLoading((prev) => ({ ...prev, access: true }));
+      setIsLoading((prev) => ({
+        ...prev,
+        access: true,
+      }));
       try {
         const accessResponse = await fetch(`${accessFileURL}`);
         if (!accessResponse.ok) {
-          throw new Error(
-            `Failed to fetch access file: ${accessResponse.statusText}`
-          );
+          throw new Error(`Failed to fetch access file: ${accessResponse.statusText}`);
         }
         const accessData = await accessResponse.json();
         setAccessFile(JSON.stringify(accessData, null, 2));
         setError("");
       } catch (err) {
         console.error("Error fetching access file:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch access file"
-        );
+        setError(err instanceof Error ? err.message : "Failed to fetch access file");
       } finally {
-        setIsLoading((prev) => ({ ...prev, access: false }));
+        setIsLoading((prev) => ({
+          ...prev,
+          access: false,
+        }));
       }
     };
 
@@ -82,24 +79,26 @@ const HomeClient = () => {
   // Fetch API file only when apiFileURL changes
   useEffect(() => {
     const fetchApiFile = async () => {
-      setIsLoading((prev) => ({ ...prev, api: true }));
+      setIsLoading((prev) => ({
+        ...prev,
+        api: true,
+      }));
       try {
         const apiResponse = await fetch(`${apiFileURL}`);
         if (!apiResponse.ok) {
-          throw new Error(
-            `Failed to fetch API file: ${apiResponse.statusText}`
-          );
+          throw new Error(`Failed to fetch API file: ${apiResponse.statusText}`);
         }
         const apiData = await apiResponse.json();
         setAPIFile(JSON.stringify(apiData, null, 2));
         setError("");
       } catch (err) {
         console.error("Error fetching API file:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch API file"
-        );
+        setError(err instanceof Error ? err.message : "Failed to fetch API file");
       } finally {
-        setIsLoading((prev) => ({ ...prev, api: false }));
+        setIsLoading((prev) => ({
+          ...prev,
+          api: false,
+        }));
       }
     };
 
@@ -109,24 +108,26 @@ const HomeClient = () => {
   // Fetch API file only when apiFileURL changes
   useEffect(() => {
     const fetchApiSchemaFile = async () => {
-      setIsLoading((prev) => ({ ...prev, api: true }));
+      setIsLoading((prev) => ({
+        ...prev,
+        api: true,
+      }));
       try {
         const apiResponse = await fetch(`${apiSchemaFileURL}`);
         if (!apiResponse.ok) {
-          throw new Error(
-            `Failed to fetch API schema file: ${apiResponse.statusText}`
-          );
+          throw new Error(`Failed to fetch API schema file: ${apiResponse.statusText}`);
         }
         const apiData = await apiResponse.json();
         setAPISchemaFile(JSON.stringify(apiData, null, 2));
         setError("");
       } catch (err) {
         console.error("Error fetching API schema file:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch API schema file"
-        );
+        setError(err instanceof Error ? err.message : "Failed to fetch API schema file");
       } finally {
-        setIsLoading((prev) => ({ ...prev, api: false }));
+        setIsLoading((prev) => ({
+          ...prev,
+          api: false,
+        }));
       }
     };
 
@@ -136,7 +137,7 @@ const HomeClient = () => {
   // Process and filter the data when the files change
   useEffect(() => {
     try {
-      if (!accessFile.trim() || !apiFile.trim() || !apiSchemaFile.trim()) {
+      if (!accessFile.trim() || !apiFile.trim()) {
         setOutput({});
         setError("");
         setLogs([]); // Clear logs when files are empty
@@ -144,9 +145,11 @@ const HomeClient = () => {
         return;
       }
 
+      const apiSchemaFileProcessed = apiSchemaFile.trim() ? apiSchemaFile : "{}";
+
       const accessJSON = JSON.parse(accessFile);
       const apiJSON = JSON.parse(apiFile);
-      const schemaJSON = JSON.parse(apiSchemaFile);
+      const schemaJSON = JSON.parse(apiSchemaFileProcessed);
 
       const startTime = performance.now();
       // const ids = analyzeApiResult(apiJSON, [], schemaJSON);
@@ -172,12 +175,16 @@ const HomeClient = () => {
   }, [accessFile, apiFile, apiSchemaFile]);
 
   const editorOptions: editor.IEditorOptions = {
-    minimap: { enabled: false },
+    minimap: {
+      enabled: false,
+    },
     scrollBeyondLastLine: false,
     automaticLayout: true,
     formatOnPaste: true,
     wordWrap: "on",
-    padding: { top: 8 },
+    padding: {
+      top: 8,
+    },
     readOnly: false, // Make editable by default
   };
 
@@ -189,9 +196,7 @@ const HomeClient = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6">
-        Filter Service Prototype v1 (18.05.2023)
-      </h1>
+      <h1 className="text-3xl font-bold mb-6">Filter Service Prototype v1 (18.05.2023)</h1>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1 space-y-2">
@@ -247,9 +252,7 @@ const HomeClient = () => {
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <p className="font-medium">Access File</p>
-            {isLoading.access && (
-              <p className="text-blue-500 text-sm">Loading...</p>
-            )}
+            {isLoading.access && <p className="text-blue-500 text-sm">Loading...</p>}
           </div>
           <div className="h-128 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
             <MonacoEditor
@@ -271,9 +274,7 @@ const HomeClient = () => {
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <p className="font-medium">API File</p>
-            {isLoading.api && (
-              <p className="text-blue-500 text-sm">Loading...</p>
-            )}
+            {isLoading.api && <p className="text-blue-500 text-sm">Loading...</p>}
           </div>
           <div className="h-128 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
             <MonacoEditor
@@ -295,9 +296,7 @@ const HomeClient = () => {
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <p className="font-medium">API Schema File</p>
-            {isLoading.api && (
-              <p className="text-blue-500 text-sm">Loading...</p>
-            )}
+            {isLoading.api && <p className="text-blue-500 text-sm">Loading...</p>}
           </div>
           <div className="h-128 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
             <MonacoEditor
@@ -322,9 +321,7 @@ const HomeClient = () => {
           <div className="flex items-center gap-4">
             <p className="font-medium">Output</p>
             {filterTime !== null && ( // Only display if filterTime is not null
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Filter time: {filterTime.toFixed(2)} ms{" "}
-              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Filter time: {filterTime.toFixed(2)} ms </p>
             )}
           </div>
           {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -348,17 +345,12 @@ const HomeClient = () => {
       <div className="mt-8 space-y-4">
         <h2 className="text-xl font-bold">Logs</h2>
         {logs.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400">
-            No logs to display.
-          </p>
+          <p className="text-gray-500 dark:text-gray-400">No logs to display.</p>
         ) : (
           <div className="border border-gray-300 rounded-md p-4 max-h-60 overflow-y-auto dark:border-gray-600 dark:bg-gray-700">
             <ul className="list-disc list-inside space-y-1">
               {logs.map((log, index) => (
-                <li
-                  key={index}
-                  className="text-sm text-gray-700 dark:text-gray-300 break-words"
-                >
+                <li key={index} className="text-sm text-gray-700 dark:text-gray-300 break-words">
                   {log}
                 </li>
               ))}
