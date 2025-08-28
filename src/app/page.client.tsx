@@ -196,7 +196,7 @@ const HomeClient = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6">Filter Service Prototype v1 (18.05.2023)</h1>
+      <h1 className="text-3xl font-bold mb-6">Filter Service v2 (28.08.2025)</h1>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1 space-y-2">
