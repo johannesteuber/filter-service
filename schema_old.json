@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://my-company.com/schemas/meta/v1",
+
+  "title": "My Company's Custom Meta-Schema",
+  "description": "Extends the Draft-07 spec with custom keywords like 'idField'.",
+
+  "allOf": [
+    {
+      "$ref": "http://json-schema.org/draft-07/schema#"
+    }
+  ],
+
+  "properties": {
+    "idField": {
+      "type": "string",
+      "description": "Specifies which property in the object serves as its unique identifier."
+    }
+  }
+}

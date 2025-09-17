@@ -2,5 +2,19 @@
   "singleQuote": false,
   "trailingComma": "all",
   "printWidth": 120,
-  "semi": true
+  "semi": true,
+  "overrides": [
+    {
+      "files": ["data/json/*.json"],
+      "options": {
+        "printWidth": 200
+      }
+    },
+    {
+      "files": ["bachelorarbeit_anhang/*.ts"],
+      "options": {
+        "printWidth": 95
+      }
+    }
+  ]
 }

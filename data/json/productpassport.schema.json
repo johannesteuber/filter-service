@@ -1,36 +1,56 @@
 {
   "type": "object",
-  "id": "productBatchId",
+  "uniqueIdentifier": "productBatchId",
+  "objectClass": "ProductBatch",
   "properties": {
     "certificates": {
       "type": "array",
-      "id": "id"
+      "items": {
+        "type": "object",
+        "uniqueIdentifier": "id",
+        "objectClass": "Certificate"
+      }
     },
     "productOwner": {
       "type": "object",
-      "id": "id",
+      "uniqueIdentifier": "id",
+      "objectClass": "ProductOwner",
       "properties": {
         "address": {
           "type": "object",
-          "id": "id"
+          "uniqueIdentifier": "id",
+          "objectClass": "Address"
         }
       }
     },
     "ingredients": {
       "type": "array",
-      "id": "ingredientId"
+      "items": {
+        "type": "object",
+        "uniqueIdentifier": "ingredientId",
+        "objectClass": "Ingredient"
+      }
     },
     "productBatchSteps": {
       "type": "array",
-      "id": "id",
-      "properties": {
-        "address": {
-          "type": "object",
-          "id": "id"
-        },
-        "stepEntries": {
-          "type": "array",
-          "id": "id"
+      "items": {
+        "type": "object",
+        "uniqueIdentifier": "id",
+        "objectClass": "ProductBatchStep",
+        "properties": {
+          "address": {
+            "type": "object",
+            "uniqueIdentifier": "id",
+            "objectClass": "Address"
+          },
+          "stepEntries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "uniqueIdentifier": "id",
+              "objectClass": "StepEntry"
+            }
+          }
         }
       }
     }

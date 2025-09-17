@@ -26,9 +26,6 @@ export async function GET(
     // Define the path to the JSON file - using the correct directory structure
     const filePath = path.join(JSON_FILES_DIRECTORY, fullFilename);
 
-    // For debugging - log the path being checked
-    console.log(`Looking for file at: ${filePath}`);
-
     // Security check: Ensure the file path is still within our JSON directory
     if (!filePath.startsWith(JSON_FILES_DIRECTORY)) {
       return NextResponse.json({ error: "Invalid file path" }, { status: 400 });
