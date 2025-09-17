@@ -12,7 +12,15 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 });
 
 const HomeClient = () => {
-  const [accessFileURL, setAccessFileURL] = useState<string>("/api/files/access_full");
+  const [fineGranularDefinition, setFineGranularDefinition] = useState<"right" | "object">("right");
+
+  const [accessFileFinegrainedObjectsURL, setAccessFileFinegrainedObjectURL] = useState<string>(
+    "/api/files/access_full_finegrained_objects",
+  );
+  const [accessFileFinegrainedRightsURL, setAccessFileFinegrainedRightsURL] = useState<string>(
+    "/api/files/access_full_finegrained_rights",
+  );
+
   const [apiFileURL, setAPIFileURL] = useState<string>("/api/files/productpassport");
   const [apiSchemaFileURL, setAPISchemaFileURL] = useState<string>("/api/files/productpassport.schema");
   const [accessFile, setAccessFile] = useState<string>("");
@@ -55,7 +63,9 @@ const HomeClient = () => {
         access: true,
       }));
       try {
-        const accessResponse = await fetch(`${accessFileURL}`);
+        const accessResponse = await fetch(
+          `${fineGranularDefinition === "object" ? accessFileFinegrainedObjectsURL : accessFileFinegrainedRightsURL}`,
+        );
         if (!accessResponse.ok) {
           throw new Error(`Failed to fetch access file: ${accessResponse.statusText}`);
         }
@@ -74,7 +84,7 @@ const HomeClient = () => {
     };
 
     fetchAccessFile();
-  }, [accessFileURL]); // Only depends on accessFileURL
+  }, [accessFileFinegrainedObjectsURL, accessFileFinegrainedRightsURL, fineGranularDefinition]); // Only depends on accessFileURL
 
   // Fetch API file only when apiFileURL changes
   useEffect(() => {
@@ -196,7 +206,39 @@ const HomeClient = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6">Filter Service v2 (28.08.2025)</h1>
+      <h1 className="text-3xl font-bold mb-6">Filter Service v3 (15.09.2025)</h1>
+
+      <h2>Finegranularity is achieved by:</h2>
+      <div className="flex flex-col gap-2">
+        <div>
+          <input
+            type="radio"
+            id="fine-granular-right-definition"
+            name="fine-granular-definition"
+            checked={fineGranularDefinition === "right"}
+            onChange={() => {
+              setFineGranularDefinition("right");
+            }}
+          />
+          <label htmlFor="fine-granular-right-definition" className="font-medium">
+            Fine-granular right definition
+          </label>
+        </div>
+        <div>
+          <input
+            type="radio"
+            id="fine-granular-object-definition"
+            name="fine-granular-definition"
+            checked={fineGranularDefinition === "object"}
+            onChange={() => {
+              setFineGranularDefinition("object");
+            }}
+          />
+          <label htmlFor="fine-granular-object-definition" className="font-medium">
+            Fine-granular object definition
+          </label>
+        </div>
+      </div>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1 space-y-2">
@@ -207,8 +249,14 @@ const HomeClient = () => {
             <input
               id="accessFileURL"
               type="text"
-              value={accessFileURL}
-              onChange={(e) => setAccessFileURL(e.target.value)}
+              value={
+                fineGranularDefinition === "object" ? accessFileFinegrainedObjectsURL : accessFileFinegrainedRightsURL
+              }
+              onChange={(e) =>
+                (fineGranularDefinition === "object"
+                  ? setAccessFileFinegrainedObjectURL
+                  : setAccessFileFinegrainedRightsURL)(e.target.value)
+              }
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               placeholder="/api/files/access_full"
             />

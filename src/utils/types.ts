@@ -5,15 +5,23 @@ type AccessRule = {
   path?: string;
   identityProperties: {
     readProperties: string[];
+    readStrategy: "permit" | "deny";
     writeProperties: string[];
     shareReadProperties: string[];
     shareWriteProperties: string[];
   };
+  digitsAccess?: {
+    property: string,
+    readableDigits: {
+      readableDigitsFrom: number,
+      readableDigitsTo: number
+    }[],
+    type: "readProperties" | "writeProperties" | "shareReadProperties" | "shareWriteProperties"
+  }[],
+  readPseudonymization: Record<string, string[]>
 };
 
-export type AccessFile = {
-  access_rules: AccessRule[];
-};
+export type AccessFile = AccessRule[];
 
 export type Json =
   | string
@@ -31,16 +39,25 @@ export type JSONObject = {
 export type Schema =
   | ObjectSchema
   | ArraySchema
+  | StringSchema
+  | IntegerSchema;
+
+type StringSchema = {
+  type: "string";
+};
+
+type IntegerSchema = {
+  type: "integer";
+};
 
 
 type ObjectSchema = {
   type: "object";
-  id: string;
+  uniqueIdentifier: string | null;
   properties?: Record<string, Schema>;
 };
 
 type ArraySchema = {
   type: "array";
-  id: string;
-  properties?: Record<string, Schema>;
+  items: Schema | Schema;
 };

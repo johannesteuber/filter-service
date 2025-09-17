@@ -1,0 +1,12 @@
+{
+  "$schema": "./schema_old.json",
+  "type": "array",
+  "idField": "id",
+  "properties": {
+    "a": {
+      "type": "object",
+      
+    }
+  }
+
+}

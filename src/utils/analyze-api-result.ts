@@ -1,17 +1,20 @@
+import { findMatchingSchema } from "./filter";
 import { Json, JSONObject, Schema } from "./types";
 
-export const analyzeApiResult = (apiResult: Json, objectIds: string[] = [], schema?: Schema) => {
-  if (Array.isArray(apiResult)) {
-    for (let i = 0; i < apiResult.length; i++) {
-      analyzeApiResult(apiResult[i], objectIds, schema);
+export const analyzeApiResult = (obj: Json, objectIds: string[] = [], schema?: Schema) => {
+  if (Array.isArray(obj)) {
+    for (let i = 0; i < obj.length; i++) {
+      analyzeApiResult(obj[i], objectIds, Array.isArray(schema) ? findMatchingSchema(obj[i], schema) : schema);
     }
-  } else if (typeof apiResult === "object" && apiResult !== null) {
-    const { id } = findIdOfObject(apiResult, schema) ?? {}
-    if(id) objectIds.push(id);
+  } else if (typeof obj === "object" && obj !== null) {
+    if (Array.isArray(schema)) throw new Error("Invalid schema");
+    const { id } = findIdOfObject(obj, schema) ?? {}
+    if (id) objectIds.push(id);
 
-    for (const [key, value] of Object.entries(apiResult)) {
+    for (const [key, value] of Object.entries(obj)) {
       if (typeof value === "object" || Array.isArray(value)) {
-        analyzeApiResult(value, objectIds, schema?.properties?.[key]);
+        if (schema && (schema.type !== "array" && schema.type !== "object")) throw new Error("Invalid schema");
+        analyzeApiResult(value, objectIds, schema?.type === "array" ? schema.items : schema?.properties?.[key]);
       }
     }
   }
@@ -20,8 +23,8 @@ export const analyzeApiResult = (apiResult: Json, objectIds: string[] = [], sche
 
 export const findIdOfObject = (object: JSONObject, schema?: Schema): { key: string; id: string } | undefined => {
   let idKey = "id";
-  if (schema) {
-    idKey = schema.id
+  if (schema && schema.type === "object") {
+    idKey = schema.uniqueIdentifier ?? "id";
   }
   for (const [key, value] of Object.entries(object)) {
     if (key !== idKey) continue;
