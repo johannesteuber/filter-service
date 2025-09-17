@@ -24,6 +24,16 @@
     ]
   },
   {
+    "objectId": "108ffdb8-657e-4ca7-9045-5dc07b24b8bf",
+    "objectEntityClass": "Address",
+    "path": "productOwner.address",
+    "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
+    "identityProperties": {
+      "readProperties": [],
+      "readPseudonymization": { "addressPseudonym": ["name", "street", "zip", "city", "country"] }
+    }
+  },
+  {
     "objectId": "068f31bb-feaf-4e64-a013-5774c52d3e74",
     "objectEntityClass": "Certificate",
     "path": "certificates",
@@ -123,15 +133,5 @@
     "identityProperties": {
       "readProperties": ["companyName", "imageSrc"]
     }
-  },
-  {
-    "objectId": "108ffdb8-657e-4ca7-9045-5dc07b24b8bf",
-    "objectEntityClass": "Address",
-    "path": "productOwner.address",
-    "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
-      "readProperties": ["name", "street", "zip", "city", "country"]
-    },
-    "readPseudonymization": { "addressIdentifier": ["name", "street", "zip", "city", "country"] }
   }
 ]
