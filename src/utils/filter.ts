@@ -44,7 +44,7 @@ export const filter = ({
     }
   } else if (typeof obj === "object" && obj !== null) {
     if (Array.isArray(schema)) throw new Error("Invalid schema");
-    const { id, key: idKey } = findIdOfObject(obj, schema) ?? {};
+    const { id, /*key: idKey*/ } = findIdOfObject(obj, schema) ?? {};
     const rule = access.find((rule) => rule.objectId === id);
 
     const readPseudonymization = rule?.pseudonymization
@@ -111,7 +111,7 @@ export const findMatchingSchema = (obj: Json, schemas: Schema[]): Schema => {
     //if (schema.type === "boolean" && typeof obj === "boolean") return schema;
     if (schema.type === "object") {
       if (typeof obj !== "object" || obj === null) continue;
-      for (const [key, value] of Object.entries(obj)) {
+      for (const [key] of Object.entries(obj)) {
         if (!schema.properties?.[key]) continue schemaLoop;
       }
     }
