@@ -18,7 +18,7 @@ type AccessRule = {
     }[],
     type: "readProperties" | "writeProperties" | "shareReadProperties" | "shareWriteProperties"
   }[],
-  readPseudonymization: Record<string, string[]>
+  pseudonymization: Record<string, string[]>
 };
 
 export type AccessFile = AccessRule[];

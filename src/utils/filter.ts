@@ -47,7 +47,7 @@ export const filter = ({
     const { id, key: idKey } = findIdOfObject(obj, schema) ?? {};
     const rule = access.find((rule) => rule.objectId === id);
 
-    const readPseudonymization = rule?.readPseudonymization
+    const readPseudonymization = rule?.pseudonymization
     if (readPseudonymization) {
       for (const [key, value] of Object.entries(readPseudonymization)) {
         let toPseudonymize = "";
