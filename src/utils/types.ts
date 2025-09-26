@@ -1,27 +1,23 @@
-type AccessRule = {
-  objectId: string;
-  objectEntityClass: string;
-  identityId: string;
-  path?: string;
-  identityProperties: {
-    readProperties: string[];
-    readStrategy: "permit" | "deny";
-    writeProperties: string[];
-    shareReadProperties: string[];
-    shareWriteProperties: string[];
+import z from "zod";
+import { AccessFileSchema, AccessRuleSchema, ApiSchemaSchema } from "./schema";
+
+
+
+export type AccessRule = z.infer<typeof AccessRuleSchema>;
+export type AccessFile = z.infer<typeof AccessFileSchema>;
+export type ApiSchema = z.infer<typeof ApiSchemaSchema>;
+
+
+type TransformedAccessRule = Omit<AccessRule, 'identityProperties'> & {
+  identityProperties: Omit<AccessRule['objectProperties'], 'readProperties' | 'writeProperties' | 'shareReadProperties' | 'shareWriteProperties'> & {
+    readProperties: string[][];
+    writeProperties: string[][];
+    shareReadProperties: string[][];
+    shareWriteProperties: string[][];
   };
-  digitsAccess?: {
-    property: string,
-    readableDigits: {
-      readableDigitsFrom: number,
-      readableDigitsTo: number
-    }[],
-    type: "readProperties" | "writeProperties" | "shareReadProperties" | "shareWriteProperties"
-  }[],
-  pseudonymization: Record<string, string[]>
 };
 
-export type AccessFile = AccessRule[];
+export type TransformedAccessFile = TransformedAccessRule[];
 
 export type Json =
   | string
@@ -36,28 +32,5 @@ export type JSONObject = {
   [key: string]: Json;
 }
 
-export type Schema =
-  | ObjectSchema
-  | ArraySchema
-  | StringSchema
-  | IntegerSchema;
-
-type StringSchema = {
-  type: "string";
-};
-
-type IntegerSchema = {
-  type: "integer";
-};
-
-
-type ObjectSchema = {
-  type: "object";
-  uniqueIdentifier: string | null;
-  properties?: Record<string, Schema>;
-};
-
-type ArraySchema = {
-  type: "array";
-  items: Schema | Schema;
-};
+export type ObjectIdentifierAndAttributes = ObjectIdentifier & { attributes: string[] };
+export type ObjectIdentifier = { type: "class"; class: string } | { type: "id"; key: string; id: string; class?: string }

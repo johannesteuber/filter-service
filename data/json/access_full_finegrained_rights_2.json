@@ -1,0 +1,10 @@
+[
+  {
+    "objectId": "e1cdc08f-580b-424c-a556-0701dff57bbb",
+    "objectEntityClass": "ProductPassport",
+    "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
+    "objectProperties": {
+      "readProperties": ["productName", "productShortName", "description", "category"]
+    }
+  }
+]

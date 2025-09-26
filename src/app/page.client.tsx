@@ -1,15 +1,30 @@
 "use client";
 
-import { filter } from "@/utils/filter";
+import {
+  AccessRights,
+  AccessStrategies,
+  DigitAccess,
+  filter,
+  Pseudonymization,
+  transformProperties,
+} from "@/utils/filter";
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-import type { editor } from "monaco-editor";
-import { Json } from "@/utils/types";
+import { AccessFile, ApiSchema, Json, ObjectIdentifierAndAttributes } from "@/utils/types";
+import { AccessFileSchema, AccessRuleSchema, ApiSchemaSchema } from "@/utils/schema";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { analyzeApiResult } from "@/utils/analyze-api-result";
+import { fetchDatentreuObjectAccessRule } from "./actions/datentreu-access";
+import { useTheme } from "@/utils/editor-options";
+import { AccessRightsSelection } from "../components/AccessRightsSelection";
+import { OutputEditor } from "../components/OutputEditor";
+import { ApiFileEditor } from "../components/ApiFileEditor";
+import { ApiSchemaEditor } from "../components/ApiSchemaEditor";
+import { AccessFileEditor } from "../components/AccessFileEditor";
 
-// Dynamically import Monaco Editor to avoid SSR issues
-const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
-  ssr: false,
-});
+export type AccessFileType = "manual" | "datentreu";
 
 const HomeClient = () => {
   const [fineGranularDefinition, setFineGranularDefinition] = useState<"right" | "object">("right");
@@ -21,6 +36,17 @@ const HomeClient = () => {
     "/api/files/access_full_finegrained_rights",
   );
 
+  const [objectIdentifiers, setObjectIdentifiers] = useState<ObjectIdentifierAndAttributes[]>([]);
+
+  const [datentreuUsername, setDatentreuUsername] = useState<string>("");
+  const [datentreuPassword, setDatentreuPassword] = useState<string>("");
+  const [datentreuAccessToken, setDatentreuAccessToken] = useState<string>("");
+  const [datentreuApplicationId, setDatentreuApplicationId] = useState<string>("");
+
+  const [accessFileType, setAccessFileType] = useState<AccessFileType>("manual");
+  const [datentreuIdentityId, setDatentreuIdentityId] = useState<string>("");
+  const [datentreuRequestedById, setDatentreuRequestedById] = useState<string>("");
+
   const [apiFileURL, setAPIFileURL] = useState<string>("/api/files/productpassport");
   const [apiSchemaFileURL, setAPISchemaFileURL] = useState<string>("/api/files/productpassport.schema");
   const [accessFile, setAccessFile] = useState<string>("");
@@ -28,7 +54,6 @@ const HomeClient = () => {
   const [apiSchemaFile, setAPISchemaFile] = useState<string>("");
   const [output, setOutput] = useState<Json>({});
   const [error, setError] = useState<string>("");
-  const [theme, setTheme] = useState<"light" | "vs-dark">("light");
   const [isLoading, setIsLoading] = useState<{
     access: boolean;
     api: boolean;
@@ -38,21 +63,15 @@ const HomeClient = () => {
   });
   const [logs, setLogs] = useState<string[]>([]);
   const [filterTime, setFilterTime] = useState<number | null>(null); // Use null initially
+  const { theme } = useTheme();
 
-  // Detect theme
+
+  //fetch from local storage
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setTheme(isDark ? "vs-dark" : "light");
-
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-      const handleChange = (e: MediaQueryListEvent) => {
-        setTheme(e.matches ? "vs-dark" : "light");
-      };
-
-      mediaQuery.addEventListener("change", handleChange);
-      return () => mediaQuery.removeEventListener("change", handleChange);
-    }
+    setDatentreuAccessToken(localStorage.getItem("datentreuAccessToken") ?? "");
+    setDatentreuApplicationId(localStorage.getItem("datentreuApplicationId") ?? "");
+    setDatentreuIdentityId(localStorage.getItem("datentreuIdentityId") ?? "");
+    setDatentreuRequestedById(localStorage.getItem("datentreuRequestedById") ?? "");
   }, []);
 
   // Fetch access file only when accessFileURL changes
@@ -62,29 +81,75 @@ const HomeClient = () => {
         ...prev,
         access: true,
       }));
-      try {
-        const accessResponse = await fetch(
-          `${fineGranularDefinition === "object" ? accessFileFinegrainedObjectsURL : accessFileFinegrainedRightsURL}`,
-        );
-        if (!accessResponse.ok) {
-          throw new Error(`Failed to fetch access file: ${accessResponse.statusText}`);
+
+      if (accessFileType === "manual") {
+        try {
+          const accessResponse = await fetch(
+            `${fineGranularDefinition === "object" ? accessFileFinegrainedObjectsURL : accessFileFinegrainedRightsURL}`,
+          );
+          if (!accessResponse.ok) {
+            console.warn(`Failed to fetch access file: ${accessResponse.statusText}`);
+            return;
+          }
+          const accessData = await accessResponse.json();
+          setAccessFile(JSON.stringify(accessData, null, 2));
+          setError("");
+        } catch (err) {
+          console.error("Error fetching access file:", err);
+          setError(err instanceof Error ? err.message : "Failed to fetch access file");
+        } finally {
+          setIsLoading((prev) => ({
+            ...prev,
+            access: false,
+          }));
         }
-        const accessData = await accessResponse.json();
-        setAccessFile(JSON.stringify(accessData, null, 2));
-        setError("");
-      } catch (err) {
-        console.error("Error fetching access file:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch access file");
-      } finally {
-        setIsLoading((prev) => ({
-          ...prev,
-          access: false,
-        }));
+        return;
+      }
+
+      if (accessFileType === "datentreu") {
+        if (!datentreuAccessToken || !datentreuApplicationId || !datentreuIdentityId) {
+          return;
+        }
+
+        const accessRights: AccessFile = [];
+
+        for (const objectIdentifier of objectIdentifiers.filter((o) => o.type === "id")) {
+          try {
+            const res = await fetchDatentreuObjectAccessRule({
+              accessToken: datentreuAccessToken,
+              applicationId: datentreuApplicationId,
+              identityId: datentreuIdentityId,
+              objectId: objectIdentifier.id,
+            });
+            const rule = AccessRuleSchema.parse(res);
+            accessRights.push(rule);
+            console.log(res);
+          } catch (e) {
+            console.log(">>>", "not found", e);
+          }
+        }
+        setAccessFile(JSON.stringify(accessRights, null, 2));
+
+        /*
+        const rules = await fetchDatentreuObjectAccessRules({
+          accessToken: datentreuAccessToken,
+          applicationId: datentreuApplicationId,
+          identityId: datentreuIdentityId,
+          objectIds: objectIdentifiers.filter((o) => o.type === "id").map((o) => o.id),
+        });
+        */
       }
     };
 
     fetchAccessFile();
-  }, [accessFileFinegrainedObjectsURL, accessFileFinegrainedRightsURL, fineGranularDefinition]); // Only depends on accessFileURL
+  }, [
+    accessFileFinegrainedObjectsURL,
+    accessFileFinegrainedRightsURL,
+    fineGranularDefinition,
+    accessFileType,
+    datentreuApplicationId,
+    datentreuIdentityId,
+  ]); // Only depends on accessFileURL
 
   // Fetch API file only when apiFileURL changes
   useEffect(() => {
@@ -144,32 +209,99 @@ const HomeClient = () => {
     fetchApiSchemaFile();
   }, [apiSchemaFileURL]); // Only depends on apiFileURL
 
+  const displayError = (error: string, e?: unknown) => {
+    setOutput({});
+    setError(error);
+    setLogs([]); // Clear logs on error
+    setFilterTime(null); // Clear filter time on error
+    if (e) console.error(e);
+  };
+
   // Process and filter the data when the files change
   useEffect(() => {
+    if (!accessFile.trim() || !apiFile.trim()) {
+      displayError("");
+      return;
+    }
+
+    let parsedAccessJson: AccessFile;
+    let apiJSON: Json;
+    let parsedSchemaJson: ApiSchema;
     try {
-      if (!accessFile.trim() || !apiFile.trim()) {
-        setOutput({});
-        setError("");
-        setLogs([]); // Clear logs when files are empty
-        setFilterTime(null); // Clear filter time
-        return;
-      }
+      const accessJSON = JSON.parse(accessFile) as AccessFile;
+      parsedAccessJson = AccessFileSchema.parse(accessJSON);
+    } catch (e) {
+      displayError("invalid api file", e);
+      return;
+    }
 
+    try {
+      apiJSON = JSON.parse(apiFile);
+    } catch (e) {
+      displayError("invalid api file", e);
+      return;
+    }
+
+    try {
       const apiSchemaFileProcessed = apiSchemaFile.trim() ? apiSchemaFile : "{}";
-
-      const accessJSON = JSON.parse(accessFile);
-      const apiJSON = JSON.parse(apiFile);
       const schemaJSON = JSON.parse(apiSchemaFileProcessed);
+      parsedSchemaJson = ApiSchemaSchema.parse(schemaJSON);
+    } catch (e) {
+      displayError("invalid schema file", e);
+      return;
+    }
+    console.log("check");
 
+    try {
       const startTime = performance.now();
-      // const ids = analyzeApiResult(apiJSON, [], schemaJSON);
+      const objectIdentifers = analyzeApiResult(apiJSON, [], parsedSchemaJson);
+      setObjectIdentifiers(objectIdentifers);
 
       // TODO: fetch access rules with the ids
+      const TYPE = "readProperties";
 
       const { obj: output, logs } = filter({
-        access: accessJSON,
+        accessRights: parsedAccessJson.reduce(
+          (acc, rule) => ({
+            ...acc,
+            [rule.objectId]: transformProperties(rule.objectProperties[TYPE], apiJSON),
+          }),
+          {} as AccessRights,
+        ),
+        accessStrategies: parsedAccessJson.reduce(
+          (acc, rule) => ({
+            ...acc,
+            [rule.objectId]: rule.objectProperties.readStrategy,
+          }),
+          {} as AccessStrategies,
+        ),
+        digitsAccess: parsedAccessJson.reduce(
+          (acc, rule) => ({
+            ...acc,
+            [rule.objectId]: rule.digitsAccess
+              ?.filter((d) => d.type === TYPE)
+              .reduce(
+                (acc, d) => ({
+                  ...acc,
+                  [d.property]: d.readableDigits.map((d) => ({
+                    digitFrom: d.readableDigitsFrom,
+                    digitTo: d.readableDigitsTo,
+                  })),
+                }),
+                {} as DigitAccess[string],
+              ),
+          }),
+          {} as DigitAccess,
+        ),
+        pseudonymization: parsedAccessJson.reduce(
+          (acc, rule) => ({
+            ...acc,
+            [rule.objectId]: rule.pseudonymization,
+          }),
+          {} as Pseudonymization,
+        ),
         obj: apiJSON,
-        schema: schemaJSON,
+        schema: parsedSchemaJson,
       });
       const endTime = performance.now();
       setFilterTime(endTime - startTime); // Store the duration
@@ -184,211 +316,130 @@ const HomeClient = () => {
     }
   }, [accessFile, apiFile, apiSchemaFile]);
 
-  const editorOptions: editor.IEditorOptions = {
-    minimap: {
-      enabled: false,
-    },
-    scrollBeyondLastLine: false,
-    automaticLayout: true,
-    formatOnPaste: true,
-    wordWrap: "on",
-    padding: {
-      top: 8,
-    },
-    readOnly: false, // Make editable by default
-  };
+  useEffect(() => {
+    localStorage.setItem("datentreuApplicationId", datentreuApplicationId);
+  }, [datentreuApplicationId]);
 
-  // Options for read-only output editor
-  const outputEditorOptions: editor.IEditorOptions = {
-    ...editorOptions,
-    readOnly: true,
-  };
+  useEffect(() => {
+    localStorage.setItem("datentreuIdentityId", datentreuIdentityId);
+  }, [datentreuIdentityId]);
+
+  useEffect(() => {
+    localStorage.setItem("datentreuRequestedById", datentreuRequestedById);
+  }, [datentreuRequestedById]);
+
+  useEffect(() => {
+    localStorage.setItem("datentreuAccessToken", datentreuAccessToken);
+  }, [datentreuAccessToken]);
 
   return (
     <div className="max-w-6xl mx-auto p-6 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6">Filter Service v3 (15.09.2025)</h1>
+      <h1 className="text-3xl font-bold mb-6">Filter Service</h1>
 
-      <h2>Finegranularity is achieved by:</h2>
-      <div className="flex flex-col gap-2">
-        <div>
-          <input
-            type="radio"
-            id="fine-granular-right-definition"
-            name="fine-granular-definition"
-            checked={fineGranularDefinition === "right"}
-            onChange={() => {
-              setFineGranularDefinition("right");
-            }}
-          />
-          <label htmlFor="fine-granular-right-definition" className="font-medium">
-            Fine-granular right definition
-          </label>
-        </div>
-        <div>
-          <input
-            type="radio"
-            id="fine-granular-object-definition"
-            name="fine-granular-definition"
-            checked={fineGranularDefinition === "object"}
-            onChange={() => {
-              setFineGranularDefinition("object");
-            }}
-          />
-          <label htmlFor="fine-granular-object-definition" className="font-medium">
-            Fine-granular object definition
-          </label>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Finegranularity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup
+            value={fineGranularDefinition}
+            onValueChange={(value) => setFineGranularDefinition(value as "right" | "object")}
+            className="mb-4"
+          >
+            <div className="flex items-center gap-3">
+              <RadioGroupItem value="right" id="right" />
+              <Label htmlFor="right">Right</Label>
+            </div>
+            <div className="flex items-center gap-3">
+              <RadioGroupItem value="object" id="object" />
+              <Label htmlFor="object">Object</Label>
+            </div>
+          </RadioGroup>
+        </CardContent>
+      </Card>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-1 space-y-2">
-          <label htmlFor="accessFileURL" className="font-medium">
-            Access File URL
-          </label>
-          <div className="flex">
-            <input
-              id="accessFileURL"
-              type="text"
-              value={
-                fineGranularDefinition === "object" ? accessFileFinegrainedObjectsURL : accessFileFinegrainedRightsURL
-              }
-              onChange={(e) =>
-                (fineGranularDefinition === "object"
-                  ? setAccessFileFinegrainedObjectURL
-                  : setAccessFileFinegrainedRightsURL)(e.target.value)
-              }
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              placeholder="/api/files/access_full"
-            />
-          </div>
-        </div>
+      <AccessRightsSelection
+        accessFileFinegrainedObjectsURL={accessFileFinegrainedObjectsURL}
+        setAccessFileFinegrainedObjectURL={setAccessFileFinegrainedObjectURL}
+        accessFileFinegrainedRightsURL={accessFileFinegrainedRightsURL}
+        setAccessFileFinegrainedRightsURL={setAccessFileFinegrainedRightsURL}
+        setDatentreuUsername={setDatentreuUsername}
+        setDatentreuPassword={setDatentreuPassword}
+        setDatentreuAccessToken={setDatentreuAccessToken}
+        datentreuAccessToken={datentreuAccessToken}
+        datentreuUsername={datentreuUsername}
+        datentreuPassword={datentreuPassword}
+        datentreuRequestedById={datentreuRequestedById}
+        setDatentreuRequestedById={setDatentreuRequestedById}
+        datentreuIdentityId={datentreuIdentityId}
+        setDatentreuIdentityId={setDatentreuIdentityId}
+        datentreuApplicationId={datentreuApplicationId}
+        setDatentreuApplicationId={setDatentreuApplicationId}
+        accessFileType={accessFileType}
+        setAccessFileType={setAccessFileType}
+        fineGranularDefinition={fineGranularDefinition}
+      />
 
-        <div className="flex-1 space-y-2">
-          <label htmlFor="apiFileURL" className="font-medium">
-            API File URL
-          </label>
-          <div className="flex">
-            <input
-              id="apiFileURL"
-              type="text"
-              value={apiFileURL}
-              onChange={(e) => setAPIFileURL(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              placeholder="/api/files/productpassport"
-            />
-          </div>
-        </div>
+      <Card>
+        <CardContent>
+          <div className="flex gap-4">
+            <div className="space-y-2 w-full">
+              <Label htmlFor="apiFileURL">API File URL</Label>
 
-        <div className="flex-1 space-y-2">
-          <label htmlFor="apiFileURL" className="font-medium">
-            API Schema File URL
-          </label>
-          <div className="flex">
-            <input
-              id="apiSchemaURL"
-              type="text"
-              value={apiSchemaFileURL}
-              onChange={(e) => setAPISchemaFileURL(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              placeholder="/api/files/productpassport.schema"
-            />
+              <Input
+                id="apiFileURL"
+                type="text"
+                value={apiFileURL}
+                onChange={(e) => setAPIFileURL(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="/api/files/productpassport"
+              />
+            </div>
+            <div className="space-y-2 w-full">
+              <Label htmlFor="apiFileURL">API Schema File URL</Label>
+              <Input
+                id="apiSchemaURL"
+                type="text"
+                value={apiSchemaFileURL}
+                onChange={(e) => setAPISchemaFileURL(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="/api/files/productpassport.schema"
+              />
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <p className="font-medium">Access File</p>
-            {isLoading.access && <p className="text-blue-500 text-sm">Loading...</p>}
-          </div>
-          <div className="h-128 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
-            <MonacoEditor
-              height="100%"
-              language="json"
-              value={accessFile}
-              onChange={(value) => setAccessFile(value || "")}
-              theme={theme}
-              options={editorOptions}
-              loading={
-                <div className="flex items-center justify-center h-full dark:bg-gray-800 dark:text-gray-400">
-                  Loading editor...
-                </div>
-              }
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <p className="font-medium">API File</p>
-            {isLoading.api && <p className="text-blue-500 text-sm">Loading...</p>}
-          </div>
-          <div className="h-128 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
-            <MonacoEditor
-              height="100%"
-              language="json"
-              value={apiFile}
-              onChange={(value) => setAPIFile(value || "")}
-              theme={theme}
-              options={editorOptions}
-              loading={
-                <div className="flex items-center justify-center h-full dark:bg-gray-800 dark:text-gray-400">
-                  Loading editor...
-                </div>
-              }
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <p className="font-medium">API Schema File</p>
-            {isLoading.api && <p className="text-blue-500 text-sm">Loading...</p>}
-          </div>
-          <div className="h-128 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
-            <MonacoEditor
-              height="100%"
-              language="json"
-              value={apiSchemaFile}
-              onChange={(value) => setAPISchemaFile(value || "")}
-              theme={theme}
-              options={editorOptions}
-              loading={
-                <div className="flex items-center justify-center h-full dark:bg-gray-800 dark:text-gray-400">
-                  Loading editor...
-                </div>
-              }
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-8">
-        <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center gap-4">
-            <p className="font-medium">Output</p>
-            {filterTime !== null && ( // Only display if filterTime is not null
-              <p className="text-sm text-gray-600 dark:text-gray-400">Filter time: {filterTime.toFixed(2)} ms </p>
-            )}
-          </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-        </div>
-        <div className="h-128 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
-          <MonacoEditor
-            height="100%"
-            language="json"
-            value={JSON.stringify(output, null, 2)}
-            theme={theme}
-            options={outputEditorOptions}
-            loading={
-              <div className="flex items-center justify-center h-full dark:bg-gray-800 dark:text-gray-400">
-                Loading editor...
-              </div>
-            }
-          />
-        </div>
-      </div>
+      <ApiFileEditor
+        apiFile={apiFile}
+        setAPIFile={setAPIFile}
+        isLoading={isLoading}
+        theme={theme}
+        objectIdentifiers={objectIdentifiers}
+        accessFileType={accessFileType}
+        applicationId={datentreuApplicationId}
+        requestedById={datentreuRequestedById}
+        accessToken={datentreuAccessToken}
+      />
+      <ApiSchemaEditor
+        apiSchemaFile={apiSchemaFile}
+        setAPISchemaFile={setAPISchemaFile}
+        isLoading={isLoading}
+        theme={theme}
+      />
+      <AccessFileEditor
+        accessFile={accessFile}
+        setAccessFile={setAccessFile}
+        accessFileType={accessFileType}
+        datentreuAccessToken={datentreuAccessToken}
+        datentreuApplicationId={datentreuApplicationId}
+        datentreuIdentityId={datentreuIdentityId}
+        datentreuRequestedById={datentreuRequestedById}
+        isLoading={isLoading}
+        theme={theme}
+        objectIdentifiers={objectIdentifiers}
+      />
+      <OutputEditor error={error} filterTime={filterTime} output={output} theme={theme} />
 
       <div className="mt-8 space-y-4">
         <h2 className="text-xl font-bold">Logs</h2>

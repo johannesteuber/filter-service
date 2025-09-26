@@ -3,7 +3,7 @@
     "objectId": "e1cdc08f-580b-424c-a556-0701dff57bbb",
     "objectEntityClass": "ProductPassport",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
+    "objectProperties": {
       "readProperties": ["productName", "productShortName", "description", "category", "imageSrc", "productionDate", "bestBefore", "certificates", "productOwner", "ingredients", "productBatchSteps"]
     }
   },
@@ -11,7 +11,7 @@
     "objectId": "108ffdb8-657e-4ca7-9045-5dc07b24b8bf",
     "objectEntityClass": "Address",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
+    "objectProperties": {
       "readProperties": ["zip"]
     },
     "pseudonymization": {
@@ -35,7 +35,7 @@
     "objectEntityClass": "Certificate",
     "path": "certificates",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
+    "objectProperties": {
       "readProperties": ["name", "link", "imageSrc"],
       "readStrategy": "deny"
     }
@@ -45,7 +45,7 @@
     "objectEntityClass": "Certificate",
     "path": "certificates",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
+    "objectProperties": {
       "readProperties": ["name", "description"]
     }
   },
@@ -54,7 +54,7 @@
     "objectEntityClass": "Certificate",
     "path": "certificates",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
+    "objectProperties": {
       "readProperties": ["name", "link"]
     }
   },
@@ -63,7 +63,7 @@
     "objectEntityClass": "Ingredient",
     "path": "ingredients",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
+    "objectProperties": {
       "readProperties": ["name", "percentage"]
     }
   },
@@ -72,7 +72,7 @@
     "objectEntityClass": "Ingredient",
     "path": "ingredients",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
+    "objectProperties": {
       "readProperties": ["name", "percentage"]
     }
   },
@@ -81,7 +81,7 @@
     "objectEntityClass": "ProductBatchStep",
     "path": "productBatchSteps",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
+    "objectProperties": {
       "readProperties": ["name", "description", "imageSrc"]
     }
   },
@@ -90,7 +90,7 @@
     "objectEntityClass": "ProductBatchStep",
     "path": "productBatchSteps",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
+    "objectProperties": {
       "readProperties": ["name", "description", "imageSrc"]
     }
   },
@@ -99,7 +99,7 @@
     "objectEntityClass": "ProductBatchStep",
     "path": "productBatchSteps",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
+    "objectProperties": {
       "readProperties": ["name", "description", "imageSrc"]
     }
   },
@@ -108,7 +108,7 @@
     "objectEntityClass": "StepEntry",
     "path": "productBatchSteps[2].stepEntries",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
+    "objectProperties": {
       "readProperties": ["date", "description", "amount", "amountUnit"]
     }
   },
@@ -117,7 +117,7 @@
     "objectEntityClass": "StepEntry",
     "path": "productBatchSteps[2].stepEntries",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
+    "objectProperties": {
       "readProperties": ["date", "description", "amount", "amountUnit"]
     }
   },
@@ -127,7 +127,7 @@
     "objectEntityClass": "ProductOwner",
     "path": "productOwner",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-    "identityProperties": {
+    "objectProperties": {
       "readProperties": ["companyName", "imageSrc"]
     }
   }
