@@ -36,7 +36,7 @@ export const AccessFileEditor = ({
   objectIdentifiers,
 }: AccessFileEditorProps) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-8">
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <p className="font-medium">Access File</p>

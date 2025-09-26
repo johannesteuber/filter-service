@@ -36,7 +36,7 @@ export const ApiFileEditor = ({
   accessToken,
 }: ApiFileEditorProps) => {
   return (
-    <div>
+    <div className="space-y-6 mt-8">
       <div className="space-y-2 ">
         <div className="flex justify-between items-center">
           <p className="font-medium">API File</p>
@@ -59,23 +59,26 @@ export const ApiFileEditor = ({
         </div>
       </div>
 
-      <p className="font-medium">Objects</p>
-      <div className="grid grid-cols-4 gap-4">
-        {objectIdentifiers
-          .filter((o) => o.type === "id")
-          .map((o, key) => {
-            return (
-              <Card key={key}>
-                <CardContent>
-                  {<p className="text-xs text-gray-500">{o.class}</p>}
+      <div>
+        <p className="font-medium">Objects</p>
+        <div className="grid grid-cols-4 gap-4">
+          {objectIdentifiers
+            .filter((o) => o.type === "id")
+            .map((o, key) => {
+              return (
+                <Card key={key}>
+                  <CardContent>
+                    {<p className="text-xs text-gray-500">{o.class}</p>}
 
-                  {o.type === "id" && <p className="text-ellipsis overflow-hidden line-clamp-1 break-all">{o.id}</p>}
-                  <p className="text-xs">{o.attributes.join(", ")}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
+                    {o.type === "id" && <p className="text-ellipsis overflow-hidden line-clamp-1 break-all">{o.id}</p>}
+                    <p className="text-xs">{o.attributes.join(", ")}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+        </div>
       </div>
+
       {accessFileType === "datentreu" && (
         <Button
           onClick={async () => {
@@ -102,7 +105,7 @@ export const ApiFileEditor = ({
             }
           }}
         >
-          Create / update allobjects in Datentreu
+          Create / update all objects in Datentreu
         </Button>
       )}
     </div>

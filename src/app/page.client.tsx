@@ -13,8 +13,7 @@ import { AccessFile, ApiSchema, Json, ObjectIdentifierAndAttributes } from "@/ut
 import { AccessFileSchema, AccessRuleSchema, ApiSchemaSchema } from "@/utils/schema";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent} from "@/components/ui/card";
 import { analyzeApiResult } from "@/utils/analyze-api-result";
 import { fetchDatentreuObjectAccessRule } from "./actions/datentreu-access";
 import { useTheme } from "@/utils/editor-options";
@@ -27,7 +26,7 @@ import { AccessFileEditor } from "../components/AccessFileEditor";
 export type AccessFileType = "manual" | "datentreu";
 
 const HomeClient = () => {
-  const [fineGranularDefinition, setFineGranularDefinition] = useState<"right" | "object">("right");
+  const [fineGranularDefinition] = useState<"right" | "object">("right");
 
   const [accessFileFinegrainedObjectsURL, setAccessFileFinegrainedObjectURL] = useState<string>(
     "/api/files/access_full_finegrained_objects",
@@ -64,7 +63,6 @@ const HomeClient = () => {
   const [logs, setLogs] = useState<string[]>([]);
   const [filterTime, setFilterTime] = useState<number | null>(null); // Use null initially
   const { theme } = useTheme();
-
 
   //fetch from local storage
   useEffect(() => {
@@ -336,79 +334,59 @@ const HomeClient = () => {
     <div className="max-w-6xl mx-auto p-6 min-h-screen">
       <h1 className="text-3xl font-bold mb-6">Filter Service</h1>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Finegranularity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <RadioGroup
-            value={fineGranularDefinition}
-            onValueChange={(value) => setFineGranularDefinition(value as "right" | "object")}
-            className="mb-4"
-          >
-            <div className="flex items-center gap-3">
-              <RadioGroupItem value="right" id="right" />
-              <Label htmlFor="right">Right</Label>
-            </div>
-            <div className="flex items-center gap-3">
-              <RadioGroupItem value="object" id="object" />
-              <Label htmlFor="object">Object</Label>
-            </div>
-          </RadioGroup>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-4">
+        <AccessRightsSelection
+          accessFileFinegrainedObjectsURL={accessFileFinegrainedObjectsURL}
+          setAccessFileFinegrainedObjectURL={setAccessFileFinegrainedObjectURL}
+          accessFileFinegrainedRightsURL={accessFileFinegrainedRightsURL}
+          setAccessFileFinegrainedRightsURL={setAccessFileFinegrainedRightsURL}
+          setDatentreuUsername={setDatentreuUsername}
+          setDatentreuPassword={setDatentreuPassword}
+          setDatentreuAccessToken={setDatentreuAccessToken}
+          datentreuAccessToken={datentreuAccessToken}
+          datentreuUsername={datentreuUsername}
+          datentreuPassword={datentreuPassword}
+          datentreuRequestedById={datentreuRequestedById}
+          setDatentreuRequestedById={setDatentreuRequestedById}
+          datentreuIdentityId={datentreuIdentityId}
+          setDatentreuIdentityId={setDatentreuIdentityId}
+          datentreuApplicationId={datentreuApplicationId}
+          setDatentreuApplicationId={setDatentreuApplicationId}
+          accessFileType={accessFileType}
+          setAccessFileType={setAccessFileType}
+          fineGranularDefinition={fineGranularDefinition}
+        />
 
-      <AccessRightsSelection
-        accessFileFinegrainedObjectsURL={accessFileFinegrainedObjectsURL}
-        setAccessFileFinegrainedObjectURL={setAccessFileFinegrainedObjectURL}
-        accessFileFinegrainedRightsURL={accessFileFinegrainedRightsURL}
-        setAccessFileFinegrainedRightsURL={setAccessFileFinegrainedRightsURL}
-        setDatentreuUsername={setDatentreuUsername}
-        setDatentreuPassword={setDatentreuPassword}
-        setDatentreuAccessToken={setDatentreuAccessToken}
-        datentreuAccessToken={datentreuAccessToken}
-        datentreuUsername={datentreuUsername}
-        datentreuPassword={datentreuPassword}
-        datentreuRequestedById={datentreuRequestedById}
-        setDatentreuRequestedById={setDatentreuRequestedById}
-        datentreuIdentityId={datentreuIdentityId}
-        setDatentreuIdentityId={setDatentreuIdentityId}
-        datentreuApplicationId={datentreuApplicationId}
-        setDatentreuApplicationId={setDatentreuApplicationId}
-        accessFileType={accessFileType}
-        setAccessFileType={setAccessFileType}
-        fineGranularDefinition={fineGranularDefinition}
-      />
+        <Card>
+          <CardContent>
+            <div className="flex gap-4">
+              <div className="space-y-2 w-full">
+                <Label htmlFor="apiFileURL">API File URL</Label>
 
-      <Card>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="space-y-2 w-full">
-              <Label htmlFor="apiFileURL">API File URL</Label>
-
-              <Input
-                id="apiFileURL"
-                type="text"
-                value={apiFileURL}
-                onChange={(e) => setAPIFileURL(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                placeholder="/api/files/productpassport"
-              />
+                <Input
+                  id="apiFileURL"
+                  type="text"
+                  value={apiFileURL}
+                  onChange={(e) => setAPIFileURL(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="/api/files/productpassport"
+                />
+              </div>
+              <div className="space-y-2 w-full">
+                <Label htmlFor="apiFileURL">API Schema File URL</Label>
+                <Input
+                  id="apiSchemaURL"
+                  type="text"
+                  value={apiSchemaFileURL}
+                  onChange={(e) => setAPISchemaFileURL(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="/api/files/productpassport.schema"
+                />
+              </div>
             </div>
-            <div className="space-y-2 w-full">
-              <Label htmlFor="apiFileURL">API Schema File URL</Label>
-              <Input
-                id="apiSchemaURL"
-                type="text"
-                value={apiSchemaFileURL}
-                onChange={(e) => setAPISchemaFileURL(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                placeholder="/api/files/productpassport.schema"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       <ApiFileEditor
         apiFile={apiFile}

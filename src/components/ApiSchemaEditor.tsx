@@ -16,7 +16,7 @@ type ApiSchemaEditorProps = {
 
 export const ApiSchemaEditor = ({ isLoading, apiSchemaFile, setAPISchemaFile, theme }: ApiSchemaEditorProps) => {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 mt-8">
       <div className="flex justify-between items-center">
         <p className="font-medium">API Schema File</p>
         {isLoading.api && <p className="text-blue-500 text-sm">Loading...</p>}
