@@ -1,3 +1,4 @@
+import { useAppContext } from "@/app/contexts/AppContext";
 import { editorOptions } from "@/utils/editor-options";
 import { EditorProps } from "@monaco-editor/react";
 import dynamic from "next/dynamic";
@@ -6,16 +7,8 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
 }) as React.ComponentType<EditorProps>;
 
-type ApiSchemaEditorProps = {
-  apiSchemaFile: string;
-  setAPISchemaFile: (value: string) => void;
-  isLoading: {
-    api: boolean;
-  };
-  theme: string;
-};
-
-export const ApiSchemaEditor = ({ isLoading, apiSchemaFile, setAPISchemaFile, theme }: ApiSchemaEditorProps) => {
+export const ApiSchemaEditor = () => {
+  const { apiSchemaFile, isLoading, theme, setAPISchemaFile } = useAppContext();
   return (
     <div className="space-y-2 mt-8">
       <div className="flex justify-between items-center">

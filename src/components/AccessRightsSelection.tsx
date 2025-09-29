@@ -5,47 +5,29 @@ import { Label } from "@radix-ui/react-label";
 import { fetchDatenreuAccessToken } from "../app/actions/datentreu-auth";
 import { createDatentreuApplication, createDatentreuIdentity } from "../app/actions/datentreu";
 import { v4 as uuidv4 } from "uuid";
-import { AccessFileType } from "../app/page.client";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { useAppContext } from "@/app/contexts/AppContext";
 
-type AccessRightsProps = {
-  accessFileType: AccessFileType;
-  setAccessFileType: (value: AccessFileType) => void;
-  accessFileUrl: string;
-  setAccessFileUrl: (value: string) => void;
+export const AccessRightsSelection = () => {
+  const {
+    accessFileURL,
+    datentreuUsername,
+    datentreuPassword,
+    datentreuAccessToken,
+    datentreuApplicationId,
+    accessFileType,
+    datentreuIdentityId,
+    datentreuRequestedById,
+    setAccessFileURL,
+    setDatentreuUsername,
+    setDatentreuPassword,
+    setDatentreuAccessToken,
+    setDatentreuApplicationId,
+    setAccessFileType,
+    setDatentreuIdentityId,
+    setDatentreuRequestedById,
 
-  setDatentreuUsername: (value: string) => void;
-  setDatentreuPassword: (value: string) => void;
-  setDatentreuAccessToken: (value: string) => void;
-  datentreuAccessToken: string;
-  datentreuUsername: string;
-  datentreuPassword: string;
-  datentreuRequestedById: string;
-  setDatentreuRequestedById: (value: string) => void;
-  datentreuIdentityId: string;
-  setDatentreuIdentityId: (value: string) => void;
-  datentreuApplicationId: string;
-  setDatentreuApplicationId: (value: string) => void;
-};
-
-export const AccessRightsSelection = ({
-  accessFileType,
-  setAccessFileType,
-  accessFileUrl,
-  setAccessFileUrl,
-  setDatentreuUsername,
-  setDatentreuPassword,
-  setDatentreuAccessToken,
-  datentreuAccessToken,
-  datentreuUsername,
-  datentreuPassword,
-  datentreuRequestedById,
-  setDatentreuRequestedById,
-  datentreuIdentityId,
-  setDatentreuIdentityId,
-  datentreuApplicationId,
-  setDatentreuApplicationId,
-}: AccessRightsProps) => {
+  } = useAppContext();
   return (
     <Card>
       <CardHeader>
@@ -73,8 +55,8 @@ export const AccessRightsSelection = ({
             <Input
               id="accessFileURL"
               type="text"
-              value={accessFileUrl}
-              onChange={(e) => setAccessFileUrl(e.target.value)}
+              value={accessFileURL}
+              onChange={(e) => setAccessFileURL(e.target.value)}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               placeholder="/api/files/access_full"
             />

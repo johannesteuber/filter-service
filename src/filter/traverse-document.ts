@@ -1,5 +1,7 @@
 import { resolveAccessTarget } from "./resolve-access-target";
 import { ApiSchema, Json, JSONObject, AccessTarget } from "../types/types";
+import Ajv from "ajv";
+const ajv = new Ajv({ strictSchema: false });
 
 export type TraverseObjectCallbackProps = { accessTarget: AccessTarget; path: string; ref: JSONObject };
 export type TraverseObjectAttributesCallback = ({
@@ -17,12 +19,24 @@ export const traverseDocument = (
   schema: ApiSchema | ApiSchema[] | undefined,
   objectCallback: (p: TraverseObjectCallbackProps) => TraverseObjectAttributesCallback | void,
   path = "",
+  top = true,
 ) => {
+  // validate data based on schema
+  if (schema && top) {
+    const validate = ajv.compile(schema);
+    const valid = validate(obj);
+    if (!valid) {
+      // soft fail if data does not match schema
+      console.warn("schema invalid", validate.errors);
+      schema = undefined;
+    }
+  }
+
   if (Array.isArray(obj)) {
     for (let i = 0; i < obj.length; i++) {
       const arrayItemPath = mergePath(path, String(i));
       const arrayItemSchema = Array.isArray(schema) ? findMatchingSchema(obj[i], schema) : schema;
-      traverseDocument(obj[i], arrayItemSchema, objectCallback, arrayItemPath);
+      traverseDocument(obj[i], arrayItemSchema, objectCallback, arrayItemPath, false);
     }
   } else if (typeof obj === "object" && obj !== null) {
     if (Array.isArray(schema)) throw new Error("Multiple schemas only allowed for arrays");
@@ -41,7 +55,7 @@ export const traverseDocument = (
 
       const attributeSchema = schema?.properties?.[key];
       const objectSchema = attributeSchema?.type === "array" ? attributeSchema.items : attributeSchema;
-      traverseDocument(value, objectSchema, objectCallback, attributePath);
+      traverseDocument(value, objectSchema, objectCallback, attributePath, false);
     }
   }
 };

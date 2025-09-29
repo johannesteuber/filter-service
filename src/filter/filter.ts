@@ -1,7 +1,6 @@
 import { Json, ApiSchema } from "@/types/types";
 import { mergePath, traverseDocument } from "./traverse-document";
 import { accessRightForPath, evalJSONPathExpressions, mask, pseudonymize } from "./filter-utilis";
-
 export type AccessRights = Record<string, string[] | undefined>;
 export type DigitAccess = Record<string, Record<string, DigitiAccessDefinition[] | undefined> | undefined>;
 export type DigitiAccessDefinition = { digitFrom: number; digitTo: number };
@@ -25,7 +24,6 @@ export const filter = ({
   const logs: string[] = [];
   const allowedAttributes: string[] = [];
   accessRights = evalJSONPathExpressions(accessRights, obj);
-
   traverseDocument(obj, schema, (object) => {
     const id = object.accessTarget.id;
     const objectClass = object.accessTarget.class;
@@ -39,7 +37,8 @@ export const filter = ({
     //
     // APPLY PSEUDONYMIZATION
     //
-    const readPseudonymization = id ? pseudonymization[id] : undefined;
+    const readPseudonymization =
+      pseudonymization[`${id}`] ?? pseudonymization[`${objectClass}.${id}`] ?? pseudonymization[`${objectClass}`];
     if (readPseudonymization) {
       for (const [key, value] of Object.entries(readPseudonymization)) {
         let p = "";
@@ -49,8 +48,10 @@ export const filter = ({
       }
     }
 
+    const objectDigitsAccess =
+      digitsAccess[`${id}`] ?? digitsAccess[`${objectClass}.${id}`] ?? digitsAccess[`${objectClass}`];
+
     return (attribute) => {
-      console.log("attribute", attribute.key)
       // skip access control pseudonyms added in "APPLY PSEUDONYMIZATION" step
       if (readPseudonymization && Object.keys(readPseudonymization).includes(attribute.key)) return;
 
@@ -69,13 +70,13 @@ export const filter = ({
       //
       // ENFORCE DIGITS ACCESS OF ATTRIBUTE
       //
-      const digitsReadAccess = id ? digitsAccess[id]?.[attribute.key] : undefined;
-      if (digitsReadAccess && digitsReadAccess.length > 0) {
+      const attributeDigitsAccess = objectDigitsAccess?.[attribute.key];
+      if (attributeDigitsAccess && attributeDigitsAccess.length > 0) {
         // currently digits read access is also applied to numbers, if this is not intended adjust the following line
         if (typeof attribute.value !== "string" && typeof attribute.value !== "number") return;
 
         const valueString = attribute.value.toString();
-        const { maskedCharacters, maskedString } = mask(valueString, digitsReadAccess);
+        const { maskedCharacters, maskedString } = mask(valueString, attributeDigitsAccess);
         object.ref[attribute.key] = maskedString;
         logs.push(`masked characters ${maskedCharacters.join(", ")} for ${attribute.path}`);
       }

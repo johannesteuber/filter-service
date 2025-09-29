@@ -1,19 +1,12 @@
 import dynamic from "next/dynamic";
 import type { editor } from "monaco-editor";
 import { editorOptions } from "@/utils/editor-options";
-import { Json } from "@/types/types";
 import { EditorProps } from "@monaco-editor/react";
+import { useAppContext } from "@/app/contexts/AppContext";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
 }) as React.ComponentType<EditorProps>;
-
-type OutputEditorProps = {
-  theme: string;
-  filterTime: number | null;
-  error: string;
-  output: Json;
-};
 
 // Options for read-only output editor
 const outputEditorOptions: editor.IEditorOptions = {
@@ -21,7 +14,14 @@ const outputEditorOptions: editor.IEditorOptions = {
   readOnly: true,
 };
 
-export const OutputEditor = ({ theme, filterTime, error, output }: OutputEditorProps) => {
+export const OutputEditor = () => {
+  const {
+    output,
+    error,
+
+    filterTime,
+    theme,
+  } = useAppContext();
   return (
     <div className="mt-8">
       <div className="flex justify-between items-center mb-2">

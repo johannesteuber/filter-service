@@ -1,41 +1,29 @@
 import { Button } from "@/components/ui/button";
 import { createDatentreuAccessRules, updateDatentreuAccessRules } from "../app/actions/datentreu-access";
-import { AccessFile, AccessTarget } from "@/types/types";
+import { AccessFile } from "@/types/types";
 import dynamic from "next/dynamic";
 import { AccessFileSchema } from "@/schemas/access-rule-schema";
 import { editorOptions } from "@/utils/editor-options";
 import { EditorProps } from "@monaco-editor/react";
+import { useAppContext } from "@/app/contexts/AppContext";
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
 }) as React.ComponentType<EditorProps>;
 
-type AccessFileEditorProps = {
-  accessFile: string;
-  setAccessFile: (value: string) => void;
-  accessFileType: string;
-  datentreuAccessToken: string;
-  datentreuApplicationId: string;
-  datentreuIdentityId: string;
-  datentreuRequestedById: string;
-  isLoading: {
-    access: boolean;
-  };
-  theme: string;
-  accessTargets: AccessTarget[];
-};
+export const AccessFileEditor = () => {
+  const {
+    accessTargets,
+    datentreuAccessToken,
+    datentreuApplicationId,
+    accessFileType,
+    datentreuIdentityId,
+    datentreuRequestedById,
+    accessFile,
+    isLoading,
+    theme,
+    setAccessFile,
+  } = useAppContext();
 
-export const AccessFileEditor = ({
-  accessFile,
-  setAccessFile,
-  accessFileType,
-  datentreuAccessToken,
-  datentreuApplicationId,
-  datentreuIdentityId,
-  datentreuRequestedById,
-  isLoading,
-  theme,
-  accessTargets,
-}: AccessFileEditorProps) => {
   return (
     <div className="space-y-6 mt-8">
       <div className="space-y-2">

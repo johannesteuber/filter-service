@@ -15,7 +15,7 @@ export const resolveAccessTarget = (object: JSONObject, schema?: ApiSchema): Acc
   for (const [key, value] of Object.entries(object)) {
     if (key !== idKey) continue;
     if (typeof value !== "string") {
-      throw new Error("id must be a string")
+      throw new Error(`id ${key}:${value} must be a string, ${JSON.stringify(object)}`)
     }
     return { id: value, class: schema?.objectClass };
   }

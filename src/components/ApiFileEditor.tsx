@@ -2,40 +2,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { editorOptions } from "@/utils/editor-options";
 import dynamic from "next/dynamic";
-import { AccessFileType } from "../app/page.client";
 import { createDatentreuObject, updateDatentreuObject } from "@/app/actions/datentreu-object";
 import { EditorProps } from "@monaco-editor/react";
-import { AccessTargetWithAttributes } from "@/filter/analyze-api-result";
+import { useAppContext } from "@/app/contexts/AppContext";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
 }) as React.ComponentType<EditorProps>;
 
-type ApiFileEditorProps = {
-  apiFile: string;
-  setAPIFile: (value: string) => void;
-  isLoading: {
-    api: boolean;
-  };
-  theme: string;
-  accessTargetsWithAttributes: AccessTargetWithAttributes[];
-  accessFileType: AccessFileType;
-  applicationId: string;
-  requestedById: string;
-  accessToken: string;
-};
+export const ApiFileEditor = () => {
+  const {
+    accessFileType,
+    accessTargets,
+    apiFile,
+    datentreuApplicationId,
+    datentreuAccessToken,
+    datentreuRequestedById,
+    isLoading,
 
-export const ApiFileEditor = ({
-  apiFile,
-  setAPIFile,
-  isLoading,
-  theme,
-  accessTargetsWithAttributes,
-  accessFileType,
-  applicationId,
-  requestedById,
-  accessToken,
-}: ApiFileEditorProps) => {
+    theme,
+
+    setAPIFile,
+  } = useAppContext();
   return (
     <div className="space-y-6 mt-8">
       <div className="space-y-2 ">
@@ -63,7 +51,7 @@ export const ApiFileEditor = ({
       <div>
         <p className="font-medium">Objects</p>
         <div className="grid grid-cols-4 gap-4">
-          {accessTargetsWithAttributes
+          {accessTargets
             .filter((o) => o.id)
             .map((o, key) => {
               return (
@@ -82,12 +70,12 @@ export const ApiFileEditor = ({
       {accessFileType === "datentreu" && (
         <Button
           onClick={async () => {
-            for (const accessTarget of accessTargetsWithAttributes) {
+            for (const accessTarget of accessTargets) {
               if (!accessTarget.id) continue;
               const res = await createDatentreuObject({
-                applicationId,
-                identityId: requestedById,
-                accessToken,
+                applicationId: datentreuApplicationId,
+                identityId: datentreuRequestedById,
+                accessToken: datentreuAccessToken,
                 objectId: accessTarget.id,
                 objectEntityClass: accessTarget.class ?? accessTarget.id,
                 properties: accessTarget.attributes,
@@ -95,9 +83,9 @@ export const ApiFileEditor = ({
 
               if (res.status === 400 && res.message?.endsWith("already exists")) {
                 await updateDatentreuObject({
-                  applicationId,
-                  identityId: requestedById,
-                  accessToken,
+                  applicationId: datentreuApplicationId,
+                  identityId: datentreuRequestedById,
+                  accessToken: datentreuAccessToken,
                   objectId: accessTarget.id,
                   objectEntityClass: accessTarget.class ?? accessTarget.id,
                   properties: accessTarget.attributes,
