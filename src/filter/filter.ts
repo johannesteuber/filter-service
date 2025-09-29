@@ -34,9 +34,9 @@ export const filter = (doc: Json, accessRights: AccessRights, schema?: ApiSchema
       //
       // ENFORCE READ ACCESS OF PROPERTY
       //
-      const accessRightsIncludePath = accessRightForPath(property.path, allowedProperties);
+      const accessRight = accessRightForPath(property.path, allowedProperties);
 
-      if (!accessRightsIncludePath) {
+      if (!accessRight) {
         object.ref[property.key] = null;
         logs.push(`access denied for ${property.path}`);
         return;
