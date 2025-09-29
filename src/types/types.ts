@@ -14,11 +14,10 @@ export type ApiSchemaFile = z.infer<typeof ApiSchemaFileSchema>;
 
 export type DatentreuAccessRight = z.infer<typeof DatentreuAccessRightsSchema>;
 
-
 export type Json = string | number | boolean | null | undefined | JSONObject | Json[];
 
 export type JSONObject = {
   [key: string]: Json;
 };
 
-export type AccessTarget = { id: string | number | undefined; class: string | undefined };
+export type AccessTarget = { objectId: string | number | undefined; objectClass: string | undefined };

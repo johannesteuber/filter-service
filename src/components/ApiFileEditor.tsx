@@ -47,16 +47,16 @@ export const ApiFileEditor = () => {
       </div>
 
       <div>
-        <p className="font-medium">Objects</p>
+        <p className="font-medium mb-2">Objects</p>
         <div className="grid grid-cols-4 gap-4">
           {accessTargets
-            .filter((o) => o.id)
+            .filter((o) => o.objectId)
             .map((o, key) => {
               return (
                 <Card key={key}>
                   <CardContent>
-                    <p className="text-xs text-gray-500">{o.class}</p>
-                    <p className="text-ellipsis overflow-hidden line-clamp-1 break-all">{o.id}</p>
+                    <p className="text-xs text-gray-500">{o.objectClass}</p>
+                    <p className="text-ellipsis overflow-hidden line-clamp-1 break-all">{o.objectId}</p>
                     <p className="text-xs">{o.properties.join(", ")}</p>
                   </CardContent>
                 </Card>
@@ -69,13 +69,13 @@ export const ApiFileEditor = () => {
         <Button
           onClick={async () => {
             for (const accessTarget of accessTargets) {
-              if (!accessTarget.id || typeof accessTarget.id !== "string") continue;
+              if (!accessTarget.objectId || typeof accessTarget.objectId !== "string") continue;
               const res = await createDatentreuObject({
                 applicationId: datentreuApplicationId,
                 identityId: datentreuOwnerIdentityId,
                 accessToken: datentreuAccessToken,
-                objectId: accessTarget.id,
-                objectEntityClass: accessTarget.class ?? accessTarget.id,
+                objectId: accessTarget.objectId,
+                objectEntityClass: accessTarget.objectClass ?? accessTarget.objectId,
                 properties: accessTarget.properties,
               });
 
@@ -84,8 +84,8 @@ export const ApiFileEditor = () => {
                   applicationId: datentreuApplicationId,
                   identityId: datentreuOwnerIdentityId,
                   accessToken: datentreuAccessToken,
-                  objectId: accessTarget.id,
-                  objectEntityClass: accessTarget.class ?? accessTarget.id,
+                  objectId: accessTarget.objectId,
+                  objectEntityClass: accessTarget.objectClass ?? accessTarget.objectId,
                   properties: accessTarget.properties,
                 });
               }

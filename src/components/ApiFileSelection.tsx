@@ -17,7 +17,6 @@ export const ApiFileSelection = () => {
               type="text"
               value={apiFileURL}
               onChange={(e) => setAPIFileURL(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               placeholder="/api/files/productpassport"
             />
           </div>
@@ -28,7 +27,6 @@ export const ApiFileSelection = () => {
               type="text"
               value={apiSchemaFileURL}
               onChange={(e) => setAPISchemaFileURL(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               placeholder="/api/files/productpassport.schema"
             />
           </div>

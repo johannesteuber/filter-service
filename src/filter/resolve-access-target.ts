@@ -12,10 +12,11 @@ export const resolveAccessTarget = (object: JSONObject, schema?: ApiSchema): Acc
   for (const [key, value] of Object.entries(object)) {
     if (key !== idKey) continue;
     if (typeof value !== "string" && typeof value !== "number") {
+      // soft fail
       console.warn(`ID ${key}:${value} must be a string or a number`);
-      return { id: undefined, class: schema?.objectClass };
+      return { objectId: undefined, objectClass: schema?.objectClass };
     }
-    return { id: value, class: schema?.objectClass };
+    return { objectId: value, objectClass: schema?.objectClass };
   }
-  return { id: undefined, class: undefined };
+  return { objectId: undefined, objectClass: schema?.objectClass };
 };

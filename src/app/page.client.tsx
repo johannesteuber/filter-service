@@ -81,7 +81,7 @@ const HomeClient = () => {
 
       const originalObject = JSON.parse(JSON.stringify(apiJSON));
 
-      const { obj: output, logs } = filter(apiJSON, accessRightsParsed, parsedSchemaJson);
+      const { doc: output, logs } = filter(apiJSON, accessRightsParsed, parsedSchemaJson);
 
       const timeStamp = new Date().toISOString();
       const log = {

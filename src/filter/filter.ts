@@ -1,18 +1,16 @@
 import { Json, ApiSchema, AccessRights } from "@/types/types";
 import { mergePath, traverseDocument } from "./traverse-document";
-import { accessRightForPath, evalJSONPathExpressions, mask, pseudonymize } from "./filter-utilis";
+import { accessRightForPath, evalJSONPathExpressions, findMatchingAccessRights, mask, pseudonymize } from "./filter-utilis";
 
-export const filter = (obj: Json, accessRights: AccessRights, schema?: ApiSchema): { logs: string[]; obj: Json } => {
+export const filter = (doc: Json, accessRights: AccessRights, schema?: ApiSchema): { logs: string[]; doc: Json } => {
   const logs: string[] = [];
   const allowedProperties: string[] = [];
-  accessRights = evalJSONPathExpressions(accessRights, obj);
-  traverseDocument(obj, schema, (object) => {
-    const id = object.accessTarget.id;
-    const objectClass = object.accessTarget.class;
-    const objectAccess = accessRights.find(
-      (r) => (id && r.objectId === id) || (objectClass && r.objectClass === objectClass),
-    );
+  accessRights = evalJSONPathExpressions(accessRights, doc);
+  traverseDocument(doc, schema, (object) => {
+    const objectAccess = findMatchingAccessRights(accessRights, object.accessTarget)
     const objectPropertyAccess = objectAccess?.propertyAccess;
+    const objectDigitsAccess = objectAccess?.digitsAccess;
+    const objectPseudonymization = objectAccess?.pseudonymization;
 
     // add access rights for this object to allowed properties and prefix with current path
     // e.g. if current path is certificate.1 and its access rights allow access to name and link, then certificate.1.name and certificate.1.link should be added to allowedProperties
@@ -21,17 +19,13 @@ export const filter = (obj: Json, accessRights: AccessRights, schema?: ApiSchema
     //
     // APPLY PSEUDONYMIZATION
     //
-    const objectPseudonymization = objectAccess?.pseudonymization;
     if (objectPseudonymization) {
       for (const [key, value] of Object.entries(objectPseudonymization)) {
-        let p = "";
-        for (const pseudonymizationKey of value) p += object.ref[pseudonymizationKey] || "";
-        object.ref[key] = pseudonymize(p);
+        const toPseudonymize = value.map((key) => object.ref[key] || "").join("");
+        object.ref[key] = pseudonymize(toPseudonymize);
         logs.push(`added pseudonymization ${key} for ${value.join(", ")}`);
       }
     }
-
-    const objectDigitsAccess = objectAccess?.digitsAccess;
 
     return (property) => {
       // skip access control for pseudonyms added in "APPLY PSEUDONYMIZATION" step
@@ -64,5 +58,5 @@ export const filter = (obj: Json, accessRights: AccessRights, schema?: ApiSchema
       }
     };
   });
-  return { logs, obj };
+  return { logs, doc };
 };

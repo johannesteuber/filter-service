@@ -50,15 +50,15 @@ export const AccessRightsSelection = () => {
     const datentreuAccessRights: DatentreuAccessRight[] = [];
 
     for (const accessTarget of accessTargets) {
-      if (!accessTarget.id || typeof accessTarget.id !== "string") continue;
+      if (!accessTarget.objectId || typeof accessTarget.objectId !== "string") continue;
       try {
         const res = await fetchDatentreuObjectAccessRule({
           accessToken: datentreuAccessToken,
           applicationId: datentreuApplicationId,
           identityId: datentreuOtherIdentityId,
-          objectId: accessTarget.id,
+          objectId: accessTarget.objectId,
         });
-        console.log(res)
+        console.log(res);
         const rule = DatentreuAccessRightsSchema.parse(res);
         datentreuAccessRights.push(rule);
         console.log(res);
@@ -113,7 +113,6 @@ export const AccessRightsSelection = () => {
               type="text"
               value={accessFileURL}
               onChange={(e) => setAccessFileURL(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               placeholder="/api/files/access_full"
             />
           </div>
@@ -122,7 +121,7 @@ export const AccessRightsSelection = () => {
         {accessRightsSource === "datentreu" && (
           <div className="flex flex-col gap-5">
             <div className="flex gap-4">
-              <div className="flex-1 space-y-2">
+              <div className="flex-2 space-y-2">
                 <Label htmlFor="datentreuUsername">Datentreu Username</Label>
                 <Input
                   id="datentreuUsername"
@@ -132,7 +131,7 @@ export const AccessRightsSelection = () => {
                 ></Input>
               </div>
 
-              <div className="flex-1 space-y-2">
+              <div className="flex-2 space-y-2">
                 <Label htmlFor="datentreuPassword">Datentreu Password</Label>
                 <Input
                   id="datentreuPassword"
@@ -142,7 +141,7 @@ export const AccessRightsSelection = () => {
                 ></Input>
               </div>
               <Button
-                className="mt-auto "
+                className="mt-auto flex-1"
                 onClick={async () => {
                   try {
                     const res = await fetchDatenreuAccessToken(datentreuUsername, datentreuPassword);
@@ -169,7 +168,7 @@ export const AccessRightsSelection = () => {
             </div>
 
             <div className="flex gap-4">
-              <div className="space-y-2 w-full">
+              <div className="space-y-2 flex-4">
                 <Label htmlFor="datentreuOtherIdentityId">Datentreu Other Identity Id</Label>
                 <Input
                   id="datentreuOtherIdentityId"
@@ -179,7 +178,7 @@ export const AccessRightsSelection = () => {
                 />
               </div>
               <Button
-                className="mt-auto"
+                className="mt-auto flex-1"
                 onClick={async () => {
                   const uuid = uuidv4();
                   try {
@@ -198,7 +197,7 @@ export const AccessRightsSelection = () => {
             </div>
 
             <div className="flex gap-4">
-              <div className="space-y-2 w-full">
+              <div className="space-y-2 flex-4">
                 <Label htmlFor="datentreuIdentityId">Datentreu Identity Id</Label>
                 <Input
                   id="datentreuOwnerIdentityId"
@@ -208,7 +207,7 @@ export const AccessRightsSelection = () => {
                 />
               </div>
               <Button
-                className="mt-auto"
+                className="mt-auto flex-1"
                 onClick={async () => {
                   const uuid = uuidv4();
                   setDatentreuOwnerIdentityId(uuid);
@@ -226,7 +225,7 @@ export const AccessRightsSelection = () => {
             </div>
 
             <div className="flex gap-4">
-              <div className="space-y-2 w-full">
+              <div className="space-y-2 flex-4">
                 <Label htmlFor="datentreuApplicationId">Datentreu Application Id</Label>
                 <Input
                   id="datentreuApplicationId"
@@ -236,7 +235,7 @@ export const AccessRightsSelection = () => {
                 />
               </div>
               <Button
-                className="mt-auto"
+                className="mt-auto flex-1"
                 onClick={async () => {
                   if (!datentreuOwnerIdentityId) {
                     alert("Please set a Datentreu Owner Identity Id");

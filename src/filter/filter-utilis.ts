@@ -1,6 +1,18 @@
 import { JSONPath } from "jsonpath-plus";
-import { AccessRights, Json } from "../types/types";
+import { AccessRight, AccessRights, AccessTarget, Json } from "../types/types";
 import crypto from "crypto";
+
+export const findMatchingAccessRights = (accessRights: AccessRights, accessTarget: AccessTarget): AccessRight => {
+  return accessRights
+    .map((r) => ({
+      right: r,
+      specificity:
+        (accessTarget.objectId && r.objectId === accessTarget.objectId ? 2 : 0) +
+        (accessTarget.objectClass && r.objectClass === accessTarget.objectClass ? 1 : 0),
+    }))
+    .filter((item) => item.specificity > 0)
+    .sort((a, b) => b.specificity - a.specificity)[0]?.right;
+};
 
 export const accessRightForPath = (currentPath: string, accessRights: string[]): boolean => {
   const currentPathParts = currentPath.split(".");

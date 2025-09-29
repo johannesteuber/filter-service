@@ -57,10 +57,10 @@ export const AccessRightsEditor = () => {
             setAccessRights(
               JSON.stringify(
                 accessTargets
-                  .filter((o) => o.id)
+                  .filter((o) => o.objectId)
                   .map((o) => {
                     return {
-                      objectId: o.id,
+                      objectId: o.objectId,
                       propertyAccess: [],
                       digitsAccess: {},
                       pseudonymization: {},

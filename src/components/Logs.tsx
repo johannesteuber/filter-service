@@ -8,7 +8,7 @@ export const Logs = () => {
       {logs.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400">No logs to display.</p>
       ) : (
-        <div className="border border-gray-300 rounded-md p-4 max-h-60 overflow-y-auto dark:border-gray-600 dark:bg-gray-700">
+        <div className="border border-input rounded-md p-4 max-h-60 overflow-y-auto dark:bg-input/30">
           <ul className="list-disc list-inside space-y-1">
             {logs.map((log, index) => (
               <li

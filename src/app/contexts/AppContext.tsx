@@ -1,7 +1,8 @@
 "use client";
 
 import { AccessTargetWithProperties } from "@/filter/analyze-api-result";
-import {  Json } from "@/types/types";
+import { transformPolicyMachineAccessRights } from "@/policy-machine/transform-policy-machine-results";
+import { Json } from "@/types/types";
 import { useTheme } from "@/utils/editor-options";
 import React, { useEffect, useState } from "react";
 
@@ -180,7 +181,8 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
           return;
         }
         const accessData = await accessResponse.json();
-        setAccessRights(JSON.stringify(accessData, null, 2));
+
+        setAccessRights(JSON.stringify(transformPolicyMachineAccessRights(accessData, "readProperties"), null, 2));
         setError("");
       } catch (err) {
         console.error("Error fetching access file:", err);

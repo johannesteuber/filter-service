@@ -1,7 +1,7 @@
 {
   "type": "object",
   "uniqueIdentifier": "productBatchId",
-  "objectClass": "ProductBatch",
+  "objectClass": "ProductPassport",
   "properties": {
     "certificates": {
       "type": "array",
