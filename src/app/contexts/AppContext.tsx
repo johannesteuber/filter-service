@@ -1,25 +1,24 @@
 "use client";
 
-import { AccessTargetWithAttributes } from "@/filter/analyze-api-result";
-import { Json } from "@/types/types";
+import { AccessTargetWithProperties } from "@/filter/analyze-api-result";
+import {  Json } from "@/types/types";
 import { useTheme } from "@/utils/editor-options";
 import React, { useEffect, useState } from "react";
 
-export type AccessFileType = "manual" | "datentreu";
+export type AccessRightsSource = "manual" | "datentreu";
 
 type AppContextType = {
-  accessTargets: AccessTargetWithAttributes[];
+  accessTargets: AccessTargetWithProperties[];
   datentreuUsername: string;
   datentreuPassword: string;
   datentreuAccessToken: string;
   datentreuApplicationId: string;
-  accessFileType: AccessFileType;
-  datentreuIdentityId: string;
-  datentreuRequestedById: string;
+  accessRightsSource: AccessRightsSource;
+  datentreuOwnerIdentityId: string;
+  datentreuOtherIdentityId: string;
   apiFileURL: string;
   apiSchemaFileURL: string;
   accessFileURL: string;
-  accessFile: string;
   apiFile: string;
   apiSchemaFile: string;
   output: Json;
@@ -31,18 +30,18 @@ type AppContextType = {
   logs: string[];
   filterTime: number | null;
   theme: string;
-  setAccessTargets: React.Dispatch<React.SetStateAction<AccessTargetWithAttributes[]>>;
+  accessRights: string;
+  setAccessTargets: React.Dispatch<React.SetStateAction<AccessTargetWithProperties[]>>;
   setDatentreuUsername: React.Dispatch<React.SetStateAction<string>>;
   setDatentreuPassword: React.Dispatch<React.SetStateAction<string>>;
   setDatentreuAccessToken: React.Dispatch<React.SetStateAction<string>>;
   setDatentreuApplicationId: React.Dispatch<React.SetStateAction<string>>;
-  setAccessFileType: React.Dispatch<React.SetStateAction<AccessFileType>>;
-  setDatentreuIdentityId: React.Dispatch<React.SetStateAction<string>>;
-  setDatentreuRequestedById: React.Dispatch<React.SetStateAction<string>>;
+  setAccessRightsSource: React.Dispatch<React.SetStateAction<AccessRightsSource>>;
+  setDatentreuOwnerIdentityId: React.Dispatch<React.SetStateAction<string>>;
+  setDatentreuOtherIdentityId: React.Dispatch<React.SetStateAction<string>>;
   setAPIFileURL: React.Dispatch<React.SetStateAction<string>>;
   setAPISchemaFileURL: React.Dispatch<React.SetStateAction<string>>;
   setAccessFileURL: React.Dispatch<React.SetStateAction<string>>;
-  setAccessFile: React.Dispatch<React.SetStateAction<string>>;
   setAPIFile: React.Dispatch<React.SetStateAction<string>>;
   setAPISchemaFile: React.Dispatch<React.SetStateAction<string>>;
   setOutput: React.Dispatch<React.SetStateAction<Json>>;
@@ -56,6 +55,7 @@ type AppContextType = {
   setLogs: React.Dispatch<React.SetStateAction<string[]>>;
   setFilterTime: React.Dispatch<React.SetStateAction<number | null>>;
   displayError: (error: string, e?: unknown) => void;
+  setAccessRights: React.Dispatch<React.SetStateAction<string>>;
 };
 
 const AppContext = React.createContext<AppContextType>({
@@ -64,13 +64,12 @@ const AppContext = React.createContext<AppContextType>({
   datentreuPassword: "",
   datentreuAccessToken: "",
   datentreuApplicationId: "",
-  accessFileType: "manual",
-  datentreuIdentityId: "",
-  datentreuRequestedById: "",
+  accessRightsSource: "manual",
+  datentreuOtherIdentityId: "",
+  datentreuOwnerIdentityId: "",
   apiFileURL: "",
   apiSchemaFileURL: "",
   accessFileURL: "",
-  accessFile: "",
   apiFile: "",
   apiSchemaFile: "",
   output: {},
@@ -82,18 +81,18 @@ const AppContext = React.createContext<AppContextType>({
   logs: [],
   filterTime: null,
   theme: "",
+  accessRights: "",
   setAccessTargets: () => {},
   setDatentreuUsername: () => {},
   setDatentreuPassword: () => {},
   setDatentreuAccessToken: () => {},
   setDatentreuApplicationId: () => {},
-  setAccessFileType: () => {},
-  setDatentreuIdentityId: () => {},
-  setDatentreuRequestedById: () => {},
+  setAccessRightsSource: () => {},
+  setDatentreuOtherIdentityId: () => {},
+  setDatentreuOwnerIdentityId: () => {},
   setAPIFileURL: () => {},
   setAPISchemaFileURL: () => {},
   setAccessFileURL: () => {},
-  setAccessFile: () => {},
   setAPIFile: () => {},
   setAPISchemaFile: () => {},
   setOutput: () => {},
@@ -102,26 +101,27 @@ const AppContext = React.createContext<AppContextType>({
   setLogs: () => {},
   setFilterTime: () => {},
   displayError: () => {},
+  setAccessRights: () => {},
 });
 
 export const useAppContext = () => React.useContext(AppContext);
 
 export const AppContextProvider = ({ children }: { children: React.ReactNode }) => {
-  const [accessTargets, setAccessTargets] = useState<AccessTargetWithAttributes[]>([]);
+  const [accessTargets, setAccessTargets] = useState<AccessTargetWithProperties[]>([]);
 
   const [datentreuUsername, setDatentreuUsername] = useState<string>("");
   const [datentreuPassword, setDatentreuPassword] = useState<string>("");
   const [datentreuAccessToken, setDatentreuAccessToken] = useState<string>("");
   const [datentreuApplicationId, setDatentreuApplicationId] = useState<string>("");
 
-  const [accessFileType, setAccessFileType] = useState<AccessFileType>("manual");
-  const [datentreuIdentityId, setDatentreuIdentityId] = useState<string>("");
-  const [datentreuRequestedById, setDatentreuRequestedById] = useState<string>("");
+  const [accessRightsSource, setAccessRightsSource] = useState<AccessRightsSource>("manual");
+  const [datentreuOwnerIdentityId, setDatentreuOwnerIdentityId] = useState<string>("");
+  const [datentreuOtherIdentityId, setDatentreuOtherIdentityId] = useState<string>("");
 
   const [apiFileURL, setAPIFileURL] = useState<string>("/api/files/productpassport");
   const [apiSchemaFileURL, setAPISchemaFileURL] = useState<string>("/api/files/productpassport.schema");
   const [accessFileURL, setAccessFileURL] = useState<string>("/api/files/access_full");
-  const [accessFile, setAccessFile] = useState<string>("");
+  const [accessRights, setAccessRights] = useState<string>("");
   const [apiFile, setAPIFile] = useState<string>("");
   const [apiSchemaFile, setAPISchemaFile] = useState<string>("");
   const [output, setOutput] = useState<Json>({});
@@ -141,8 +141,8 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     setDatentreuAccessToken(localStorage.getItem("datentreuAccessToken") ?? "");
     setDatentreuApplicationId(localStorage.getItem("datentreuApplicationId") ?? "");
-    setDatentreuIdentityId(localStorage.getItem("datentreuIdentityId") ?? "");
-    setDatentreuRequestedById(localStorage.getItem("datentreuRequestedById") ?? "");
+    setDatentreuOwnerIdentityId(localStorage.getItem("datentreuOwnerIdentityId") ?? "");
+    setDatentreuOtherIdentityId(localStorage.getItem("datentreuOtherIdentityId") ?? "");
   }, []);
 
   // update local storage
@@ -151,12 +151,12 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
   }, [datentreuApplicationId]);
 
   useEffect(() => {
-    localStorage.setItem("datentreuIdentityId", datentreuIdentityId);
-  }, [datentreuIdentityId]);
+    localStorage.setItem("datentreuOwnerIdentityId", datentreuOwnerIdentityId);
+  }, [datentreuOwnerIdentityId]);
 
   useEffect(() => {
-    localStorage.setItem("datentreuRequestedById", datentreuRequestedById);
-  }, [datentreuRequestedById]);
+    localStorage.setItem("datentreuOtherIdentityId", datentreuOtherIdentityId);
+  }, [datentreuOtherIdentityId]);
 
   useEffect(() => {
     localStorage.setItem("datentreuAccessToken", datentreuAccessToken);
@@ -180,7 +180,7 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
           return;
         }
         const accessData = await accessResponse.json();
-        setAccessFile(JSON.stringify(accessData, null, 2));
+        setAccessRights(JSON.stringify(accessData, null, 2));
         setError("");
       } catch (err) {
         console.error("Error fetching access file:", err);
@@ -194,10 +194,10 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
       return;
     };
 
-    if (accessFileType === "manual") {
+    if (accessRightsSource === "manual") {
       fetchAccessRights();
     }
-  }, [accessFileURL, accessFileType]);
+  }, [accessFileURL, accessRightsSource]);
 
   //
   // FETCH API SCHEMA FILE
@@ -277,13 +277,12 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
         datentreuPassword,
         datentreuAccessToken,
         datentreuApplicationId,
-        accessFileType,
-        datentreuIdentityId,
-        datentreuRequestedById,
+        accessRightsSource,
+        datentreuOtherIdentityId,
+        datentreuOwnerIdentityId,
         apiFileURL,
         apiSchemaFileURL,
         accessFileURL,
-        accessFile,
         apiFile,
         apiSchemaFile,
         output,
@@ -292,18 +291,18 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
         logs,
         filterTime,
         theme,
+        accessRights,
         setAccessTargets,
         setDatentreuUsername,
         setDatentreuPassword,
         setDatentreuAccessToken,
         setDatentreuApplicationId,
-        setAccessFileType,
-        setDatentreuIdentityId,
-        setDatentreuRequestedById,
+        setAccessRightsSource,
+        setDatentreuOtherIdentityId,
+        setDatentreuOwnerIdentityId,
         setAPIFileURL,
         setAPISchemaFileURL,
         setAccessFileURL,
-        setAccessFile,
         setAPIFile,
         setAPISchemaFile,
         setOutput,
@@ -312,6 +311,7 @@ export const AppContextProvider = ({ children }: { children: React.ReactNode }) 
         setLogs,
         setFilterTime,
         displayError,
+        setAccessRights,
       }}
     >
       {children}

@@ -1,42 +1,45 @@
 import { Button } from "@/components/ui/button";
 import { createDatentreuAccessRules, updateDatentreuAccessRules } from "../app/actions/datentreu-access";
-import { AccessFile } from "@/types/types";
 import dynamic from "next/dynamic";
-import { AccessFileSchema } from "@/schemas/access-rule-schema";
 import { editorOptions } from "@/utils/editor-options";
 import { EditorProps } from "@monaco-editor/react";
 import { useAppContext } from "@/app/contexts/AppContext";
+import { AccessRight } from "@/types/types";
+import { parseFile } from "@/app/page.client";
+import { AccessRightsSchema } from "@/schemas/access-rule-schema";
+import { transformToPolicyMachine } from "@/policy-machine/transform-policy-machine-results";
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
 }) as React.ComponentType<EditorProps>;
 
-export const AccessFileEditor = () => {
+export const AccessRightsEditor = () => {
   const {
     accessTargets,
     datentreuAccessToken,
     datentreuApplicationId,
-    accessFileType,
-    datentreuIdentityId,
-    datentreuRequestedById,
-    accessFile,
+    datentreuOwnerIdentityId,
+    datentreuOtherIdentityId,
     isLoading,
     theme,
-    setAccessFile,
+    accessRightsSource,
+    accessRights,
+    setAccessRights,
   } = useAppContext();
 
   return (
     <div className="space-y-6 mt-8">
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-          <p className="font-medium">Access File</p>
+          <p className="font-medium">Access Rights</p>
           {isLoading.access && <p className="text-blue-500 text-sm">Loading...</p>}
         </div>
-        <div className="h-128 border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
+
+        <div className="h-128  border border-gray-300 rounded-md shadow-sm overflow-hidden dark:border-gray-600">
           <MonacoEditor
             height="100%"
             language="json"
-            value={accessFile}
-            onChange={(value) => setAccessFile(value || "")}
+            value={accessRights}
+            onChange={(value) => setAccessRights(value || "")}
             theme={theme}
             options={editorOptions}
             loading={
@@ -51,53 +54,49 @@ export const AccessFileEditor = () => {
       <div className="flex gap-4">
         <Button
           onClick={() => {
-            setAccessFile(
+            setAccessRights(
               JSON.stringify(
                 accessTargets
                   .filter((o) => o.id)
                   .map((o) => {
                     return {
                       objectId: o.id,
-                      objectEntityClass: "",
-                      identityId: accessFileType === "datentreu" ? datentreuIdentityId : "",
-                      objectProperties: {
-                        readProperties: [],
-                        writeProperties: [],
-                        shareReadProperties: [],
-                        shareWriteProperties: [],
-                      },
-                    };
-                  }) as AccessFile,
+                      propertyAccess: [],
+                      digitsAccess: {},
+                      pseudonymization: {},
+                    } as AccessRight;
+                  }),
               ),
             );
           }}
         >
           Replace by empty rules for all objects
         </Button>
-        {accessFileType === "datentreu" && (
+        {accessRightsSource === "datentreu" && (
           <Button
             onClick={async () => {
-              const accessJSON = JSON.parse(accessFile) as AccessFile;
               try {
-                const parsedAccessJson = AccessFileSchema.parse(accessJSON);
-                for (const rule of parsedAccessJson) {
+                const accessRightsParsed = parseFile(accessRights, "property access rights", AccessRightsSchema);
+                if (!accessRightsParsed) return;
+                for (const accessRight of accessRightsParsed) {
+                  if (!accessRight.objectId || typeof accessRight.objectId !== "string") continue;
                   const res = await createDatentreuAccessRules({
                     applicationId: datentreuApplicationId,
-                    identityId: datentreuIdentityId,
+                    identityId: datentreuOtherIdentityId,
                     accessToken: datentreuAccessToken,
-                    requestedById: datentreuRequestedById,
-                    objectId: rule.objectId,
-                    accessRule: rule,
+                    requestedById: datentreuOwnerIdentityId,
+                    objectId: accessRight.objectId,
+                    accessRules: transformToPolicyMachine(accessRight),
                   });
 
                   if (res.status === 400 && res.message?.includes("already exists")) {
                     await updateDatentreuAccessRules({
                       applicationId: datentreuApplicationId,
-                      identityId: datentreuIdentityId,
+                      identityId: datentreuOtherIdentityId,
                       accessToken: datentreuAccessToken,
-                      requestedById: datentreuRequestedById,
-                      objectId: rule.objectId,
-                      accessRule: rule,
+                      requestedById: datentreuOwnerIdentityId,
+                      objectId: accessRight.objectId,
+                      accessRules: transformToPolicyMachine(accessRight),
                     });
                   }
                 }

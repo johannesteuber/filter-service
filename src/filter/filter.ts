@@ -1,46 +1,29 @@
-import { Json, ApiSchema } from "@/types/types";
+import { Json, ApiSchema, AccessRights } from "@/types/types";
 import { mergePath, traverseDocument } from "./traverse-document";
 import { accessRightForPath, evalJSONPathExpressions, mask, pseudonymize } from "./filter-utilis";
-export type AccessRights = Record<string, string[] | undefined>;
-export type DigitAccess = Record<string, Record<string, DigitiAccessDefinition[] | undefined> | undefined>;
-export type DigitiAccessDefinition = { digitFrom: number; digitTo: number };
-export type Pseudonymization = Record<string, Record<string, string[]> | undefined>;
 
-export interface FilterProps {
-  accessRights: AccessRights;
-  digitsAccess: DigitAccess;
-  pseudonymization: Pseudonymization;
-  obj: Json;
-  schema?: ApiSchema;
-}
-
-export const filter = ({
-  accessRights,
-  pseudonymization,
-  digitsAccess,
-  obj,
-  schema,
-}: FilterProps): { logs: string[]; obj: Json } => {
+export const filter = (obj: Json, accessRights: AccessRights, schema?: ApiSchema): { logs: string[]; obj: Json } => {
   const logs: string[] = [];
-  const allowedAttributes: string[] = [];
+  const allowedProperties: string[] = [];
   accessRights = evalJSONPathExpressions(accessRights, obj);
   traverseDocument(obj, schema, (object) => {
     const id = object.accessTarget.id;
     const objectClass = object.accessTarget.class;
-    const attributeAccessRights =
-      accessRights[`${id}`] ?? accessRights[`${objectClass}.${id}`] ?? accessRights[`${objectClass}`];
+    const objectAccess = accessRights.find(
+      (r) => (id && r.objectId === id) || (objectClass && r.objectClass === objectClass),
+    );
+    const objectPropertyAccess = objectAccess?.propertyAccess;
 
-    // add access rights for this object to allowed attributes and prefix with current path
-    // e.g. if current path is certificate.1 and its access rights allow access to name and link, then certificate.1.name and certificate.1.link should be added to allowedAttributes
-    allowedAttributes.push(...(attributeAccessRights?.map((r) => mergePath(object.path, r)) ?? []));
+    // add access rights for this object to allowed properties and prefix with current path
+    // e.g. if current path is certificate.1 and its access rights allow access to name and link, then certificate.1.name and certificate.1.link should be added to allowedProperties
+    allowedProperties.push(...(objectPropertyAccess?.map((r) => mergePath(object.path, r)) ?? []));
 
     //
     // APPLY PSEUDONYMIZATION
     //
-    const readPseudonymization =
-      pseudonymization[`${id}`] ?? pseudonymization[`${objectClass}.${id}`] ?? pseudonymization[`${objectClass}`];
-    if (readPseudonymization) {
-      for (const [key, value] of Object.entries(readPseudonymization)) {
+    const objectPseudonymization = objectAccess?.pseudonymization;
+    if (objectPseudonymization) {
+      for (const [key, value] of Object.entries(objectPseudonymization)) {
         let p = "";
         for (const pseudonymizationKey of value) p += object.ref[pseudonymizationKey] || "";
         object.ref[key] = pseudonymize(p);
@@ -48,37 +31,36 @@ export const filter = ({
       }
     }
 
-    const objectDigitsAccess =
-      digitsAccess[`${id}`] ?? digitsAccess[`${objectClass}.${id}`] ?? digitsAccess[`${objectClass}`];
+    const objectDigitsAccess = objectAccess?.digitsAccess;
 
-    return (attribute) => {
-      // skip access control pseudonyms added in "APPLY PSEUDONYMIZATION" step
-      if (readPseudonymization && Object.keys(readPseudonymization).includes(attribute.key)) return;
+    return (property) => {
+      // skip access control for pseudonyms added in "APPLY PSEUDONYMIZATION" step
+      if (objectPseudonymization && Object.keys(objectPseudonymization).includes(property.key)) return;
 
       //
-      // ENFORCE READ ACCESS OF ATTRIBUTE
+      // ENFORCE READ ACCESS OF PROPERTY
       //
-      const accessRightsIncludePath = accessRightForPath(attribute.path, allowedAttributes);
+      const accessRightsIncludePath = accessRightForPath(property.path, allowedProperties);
 
       if (!accessRightsIncludePath) {
-        object.ref[attribute.key] = null;
-        logs.push(`access denied for <i>${attribute.path}</i>`);
+        object.ref[property.key] = null;
+        logs.push(`access denied for ${property.path}`);
         return;
       }
-      logs.push(`access granted for <i>${attribute.path}</i>`);
+      logs.push(`access granted for ${property.path}`);
 
       //
-      // ENFORCE DIGITS ACCESS OF ATTRIBUTE
+      // ENFORCE DIGITS ACCESS OF PROPERTY
       //
-      const attributeDigitsAccess = objectDigitsAccess?.[attribute.key];
-      if (attributeDigitsAccess && attributeDigitsAccess.length > 0) {
+      const propertyDigitsAccess = objectDigitsAccess?.[property.key];
+      if (propertyDigitsAccess && propertyDigitsAccess.length > 0) {
         // currently digits read access is also applied to numbers, if this is not intended adjust the following line
-        if (typeof attribute.value !== "string" && typeof attribute.value !== "number") return;
+        if (typeof property.value !== "string" && typeof property.value !== "number") return;
 
-        const valueString = attribute.value.toString();
-        const { maskedCharacters, maskedString } = mask(valueString, attributeDigitsAccess);
-        object.ref[attribute.key] = maskedString;
-        logs.push(`masked characters ${maskedCharacters.join(", ")} for ${attribute.path}`);
+        const valueString = property.value.toString();
+        const { maskedCharacters, maskedString } = mask(valueString, propertyDigitsAccess);
+        object.ref[property.key] = maskedString;
+        logs.push(`masked characters ${maskedCharacters.join(", ")} for ${property.path}`);
       }
     };
   });

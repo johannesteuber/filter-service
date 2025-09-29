@@ -4,7 +4,7 @@ import Ajv from "ajv";
 const ajv = new Ajv({ strictSchema: false });
 
 export type TraverseObjectCallbackProps = { accessTarget: AccessTarget; path: string; ref: JSONObject };
-export type TraverseObjectAttributesCallback = ({
+export type TraverseObjectPropertyCallback = ({
   key,
   path,
   value,
@@ -17,7 +17,7 @@ export type TraverseObjectAttributesCallback = ({
 export const traverseDocument = (
   obj: Json,
   schema: ApiSchema | undefined,
-  objectCallback: (p: TraverseObjectCallbackProps) => TraverseObjectAttributesCallback | void,
+  objectCallback: (p: TraverseObjectCallbackProps) => TraverseObjectPropertyCallback | void,
   path = "",
   isRoot = true,
 ) => {
@@ -45,18 +45,18 @@ export const traverseDocument = (
     if (schema && schema.type !== "object") throw new Error("Invalid schema, expected object");
 
     const accessTarget = resolveAccessTarget(obj, schema);
-    const attributeCallback = objectCallback({ accessTarget, path, ref: obj });
+    const propertyCallback = objectCallback({ accessTarget, path, ref: obj });
 
     for (const [key, value] of Object.entries(obj)) {
-      const attributePath = mergePath(path, key);
+      const propertyPath = mergePath(path, key);
 
       if (typeof value !== "object" && !Array.isArray(value)) {
-        attributeCallback?.({ key, path: attributePath, value });
+        propertyCallback?.({ key, path: propertyPath, value });
         continue;
       }
 
-      const attributeSchema = schema?.properties?.[key];
-      traverseDocument(value, attributeSchema, objectCallback, attributePath, false);
+      const propertySchema = schema?.properties?.[key];
+      traverseDocument(value, propertySchema, objectCallback, propertyPath, false);
     }
   }
 };

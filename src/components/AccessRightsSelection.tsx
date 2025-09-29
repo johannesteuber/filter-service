@@ -7,6 +7,10 @@ import { createDatentreuApplication, createDatentreuIdentity } from "../app/acti
 import { v4 as uuidv4 } from "uuid";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { useAppContext } from "@/app/contexts/AppContext";
+import { fetchDatentreuObjectAccessRule } from "@/app/actions/datentreu-access";
+import { DatentreuAccessRight } from "@/types/types";
+import { DatentreuAccessRightsSchema } from "@/schemas/datentreu-access-rule-schema";
+import { transformPolicyMachineAccessRights } from "@/policy-machine/transform-policy-machine-results";
 
 export const AccessRightsSelection = () => {
   const {
@@ -15,19 +19,71 @@ export const AccessRightsSelection = () => {
     datentreuPassword,
     datentreuAccessToken,
     datentreuApplicationId,
-    accessFileType,
-    datentreuIdentityId,
-    datentreuRequestedById,
+    accessRightsSource,
+    datentreuOtherIdentityId,
+    datentreuOwnerIdentityId,
+    accessTargets,
     setAccessFileURL,
     setDatentreuUsername,
     setDatentreuPassword,
     setDatentreuAccessToken,
     setDatentreuApplicationId,
-    setAccessFileType,
-    setDatentreuIdentityId,
-    setDatentreuRequestedById,
-
+    setAccessRightsSource,
+    setDatentreuOtherIdentityId,
+    setDatentreuOwnerIdentityId,
+    setIsLoading,
+    setAccessRights,
   } = useAppContext();
+
+  //
+  // FETCH ACCESS RIGHTS IF ACCESS FILE TYPE IS DATENTREU
+  // => sets AccessFile
+  //
+  const fetchDatentreuAccessRights = async () => {
+    if (!datentreuAccessToken || !datentreuApplicationId || !datentreuOwnerIdentityId || !datentreuOtherIdentityId) {
+      alert("Please set a Datentreu Access Token, Application Id, Owner Identity Id and Other Identity Id");
+    }
+    setIsLoading((prev) => ({
+      ...prev,
+      access: true,
+    }));
+    const datentreuAccessRights: DatentreuAccessRight[] = [];
+
+    for (const accessTarget of accessTargets) {
+      if (!accessTarget.id || typeof accessTarget.id !== "string") continue;
+      try {
+        const res = await fetchDatentreuObjectAccessRule({
+          accessToken: datentreuAccessToken,
+          applicationId: datentreuApplicationId,
+          identityId: datentreuOtherIdentityId,
+          objectId: accessTarget.id,
+        });
+        console.log(res)
+        const rule = DatentreuAccessRightsSchema.parse(res);
+        datentreuAccessRights.push(rule);
+        console.log(res);
+      } catch (e) {
+        console.error("access rights not found", e);
+      }
+    }
+    const accessRights = transformPolicyMachineAccessRights(datentreuAccessRights, "readProperties");
+    setAccessRights(JSON.stringify(accessRights));
+
+    setIsLoading((prev) => ({
+      ...prev,
+      access: false,
+    }));
+    /*
+    // ENDPOINT CURRENTLY NOT WORKING (because of body in GET request)
+    const rules = await fetchDatentreuObjectAccessRules({
+      accessToken: datentreuAccessToken,
+      applicationId: datentreuApplicationId,
+      identityId: datentreuIdentityId,
+      objectIds: objectIdentifiers.filter((o) => o.type === "id").map((o) => o.id),
+    });
+    */
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -35,8 +91,8 @@ export const AccessRightsSelection = () => {
       </CardHeader>
       <CardContent>
         <RadioGroup
-          value={accessFileType}
-          onValueChange={(value) => setAccessFileType(value as "manual" | "datentreu")}
+          value={accessRightsSource}
+          onValueChange={(value) => setAccessRightsSource(value as "manual" | "datentreu")}
           className="mb-4"
         >
           <div className="flex items-center gap-3">
@@ -48,7 +104,7 @@ export const AccessRightsSelection = () => {
             <Label htmlFor="datentreu">Datentreu</Label>
           </div>
         </RadioGroup>
-        {accessFileType === "manual" && (
+        {accessRightsSource === "manual" && (
           <div className="flex-1 space-y-2">
             <Label htmlFor="accessFileURL">Access File URL</Label>
 
@@ -63,7 +119,7 @@ export const AccessRightsSelection = () => {
           </div>
         )}
 
-        {accessFileType === "datentreu" && (
+        {accessRightsSource === "datentreu" && (
           <div className="flex flex-col gap-5">
             <div className="flex gap-4">
               <div className="flex-1 space-y-2">
@@ -114,27 +170,26 @@ export const AccessRightsSelection = () => {
 
             <div className="flex gap-4">
               <div className="space-y-2 w-full">
-                <Label htmlFor="datentreuRequestedById">Datentreu Requested By Identity Id</Label>
+                <Label htmlFor="datentreuOtherIdentityId">Datentreu Other Identity Id</Label>
                 <Input
-                  id="datentreuRequestedById"
+                  id="datentreuOtherIdentityId"
                   type="text"
-                  value={datentreuRequestedById}
-                  onChange={(e) => setDatentreuRequestedById(e.target.value)}
+                  value={datentreuOtherIdentityId}
+                  onChange={(e) => setDatentreuOtherIdentityId(e.target.value)}
                 />
               </div>
               <Button
                 className="mt-auto"
                 onClick={async () => {
-                  let uuid = "";
-                  if (!datentreuRequestedById) {
-                    uuid = uuidv4();
-                    setDatentreuRequestedById(uuid);
-                  }
+                  const uuid = uuidv4();
                   try {
-                    const res = await createDatentreuIdentity(datentreuRequestedById || uuid, datentreuAccessToken);
+                    const res = await createDatentreuIdentity(uuid, datentreuAccessToken);
+                    setDatentreuOtherIdentityId(uuid);
+
                     console.log(res);
                   } catch (e) {
                     console.error(e);
+                    setDatentreuOtherIdentityId("");
                   }
                 }}
               >
@@ -146,22 +201,20 @@ export const AccessRightsSelection = () => {
               <div className="space-y-2 w-full">
                 <Label htmlFor="datentreuIdentityId">Datentreu Identity Id</Label>
                 <Input
-                  id="datentreuIdentityId"
+                  id="datentreuOwnerIdentityId"
                   type="text"
-                  value={datentreuIdentityId}
-                  onChange={(e) => setDatentreuIdentityId(e.target.value)}
+                  value={datentreuOwnerIdentityId}
+                  onChange={(e) => setDatentreuOwnerIdentityId(e.target.value)}
                 />
               </div>
               <Button
                 className="mt-auto"
                 onClick={async () => {
-                  let uuid = "";
-                  if (!datentreuIdentityId) {
-                    uuid = uuidv4();
-                    setDatentreuIdentityId(uuid);
-                  }
+                  const uuid = uuidv4();
+                  setDatentreuOwnerIdentityId(uuid);
+
                   try {
-                    const res = await createDatentreuIdentity(datentreuIdentityId || uuid, datentreuAccessToken);
+                    const res = await createDatentreuIdentity(uuid, datentreuAccessToken);
                     console.log(res);
                   } catch (e) {
                     console.error(e);
@@ -185,30 +238,28 @@ export const AccessRightsSelection = () => {
               <Button
                 className="mt-auto"
                 onClick={async () => {
-                  if (!datentreuIdentityId) {
-                    alert("Please set a Datentreu Identity Id");
+                  if (!datentreuOwnerIdentityId) {
+                    alert("Please set a Datentreu Owner Identity Id");
                     return;
                   }
-                  let uuid = "";
-                  if (!datentreuApplicationId) {
-                    uuid = uuidv4();
-                    setDatentreuApplicationId(uuid);
-                  }
+                  const uuid = uuidv4();
+
                   try {
-                    const res = await createDatentreuApplication(
-                      datentreuApplicationId || uuid,
-                      datentreuRequestedById,
-                      datentreuAccessToken,
-                    );
+                    const res = await createDatentreuApplication(uuid, datentreuOwnerIdentityId, datentreuAccessToken);
+                    setDatentreuApplicationId(uuid);
+
                     console.log(res);
                   } catch (e) {
                     console.error(e);
+                    setDatentreuApplicationId("");
                   }
                 }}
               >
                 Create Application
               </Button>
             </div>
+
+            <Button onClick={fetchDatentreuAccessRights}>Fetch Access Rights</Button>
           </div>
         )}
       </CardContent>

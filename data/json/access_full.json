@@ -12,23 +12,23 @@
     "objectEntityClass": "Address",
     "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
     "objectProperties": {
-      "readProperties": ["zip"]
-    },
-    "pseudonymization": {
-      "addressPseudonym": ["name", "street", "zip", "city", "country"]
-    },
-    "digitsAccess": [
-      {
-        "property": "zip",
-        "readableDigits": [
-          {
-            "readableDigitsFrom": 1,
-            "readableDigitsTo": 2
-          }
-        ],
-        "type": "readProperties"
+      "readProperties": ["zip"],
+      "digitsAccess": [
+        {
+          "property": "zip",
+          "readableDigits": [
+            {
+              "readableDigitsFrom": 1,
+              "readableDigitsTo": 2
+            }
+          ],
+          "type": "readProperties"
+        }
+      ],
+      "pseudonymization": {
+        "addressPseudonym": ["name", "street", "zip", "city", "country"]
       }
-    ]
+    }
   },
   {
     "objectId": "068f31bb-feaf-4e64-a013-5774c52d3e74",

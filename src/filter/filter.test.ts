@@ -2,12 +2,8 @@ import { filter } from "./filter";
 import productpassport from "../../data/json/productpassport.json";
 import access_full from "../../data/json/access_full.json";
 import productpassport_schema from "../../data/json/productpassport.schema.json";
-import {
-  transformPolicyMachineAccessRights,
-  transformPolicyMachineDigitsAccess,
-  transformPolicyMachinePseudonymization,
-} from "../policy-machine/transform-policy-machine-results";
-import { AccessFileSchema } from "../schemas/access-rule-schema";
+import { transformPolicyMachineAccessRights } from "../policy-machine/transform-policy-machine-results";
+import { DatentreuAccessFileSchema } from "../schemas/datentreu-access-rule-schema";
 import { ApiSchemaFileSchema } from "../schemas/api-file-schema-schema";
 
 export function assertIsObject(value: unknown): asserts value is Record<string, unknown> {
@@ -22,15 +18,13 @@ export function assertIsArray(value: unknown): asserts value is unknown[] {
 }
 
 test("productpassport with correct schema and access_full.json", () => {
-  const accessRights = AccessFileSchema.parse(access_full);
+  const accessRights = DatentreuAccessFileSchema.parse(access_full);
   const schema = ApiSchemaFileSchema.parse(productpassport_schema);
-  const result = filter({
-    obj: JSON.parse(JSON.stringify(productpassport)),
-    accessRights: transformPolicyMachineAccessRights(accessRights, "readProperties"),
-    digitsAccess: transformPolicyMachineDigitsAccess(accessRights, "readProperties"),
-    pseudonymization: transformPolicyMachinePseudonymization(accessRights),
+  const result = filter(
+    JSON.parse(JSON.stringify(productpassport)),
+    transformPolicyMachineAccessRights(accessRights, "readProperties"),
     schema,
-  }).obj;
+  ).obj;
 
   assertIsObject(result);
 
@@ -88,17 +82,12 @@ test("productpassport with correct schema and access_full.json", () => {
 });
 
 test("productpassport without schema and access_full.json", () => {
-  const accessRights = AccessFileSchema.parse(access_full);
-  const result = filter({
-    obj: productpassport,
-    accessRights: transformPolicyMachineAccessRights(accessRights, "readProperties"),
-    digitsAccess: transformPolicyMachineDigitsAccess(accessRights, "readProperties"),
-    pseudonymization: transformPolicyMachinePseudonymization(accessRights),
-  }).obj;
+  const accessRights = DatentreuAccessFileSchema.parse(access_full);
+  const result = filter(productpassport, transformPolicyMachineAccessRights(accessRights, "readProperties")).obj;
 
   assertIsObject(result);
 
-  // attributes of main productpassport object should all be null because without schema id field cannot be identified
+  // properties of main productpassport object should all be null because without schema id field cannot be identified
 
   expect(result["productBatchId"]).toBe(null);
   expect(result["productId"]).toBe(null);
@@ -131,7 +120,7 @@ test("productpassport without schema and access_full.json", () => {
   assertIsObject(result["certificates"][0]);
   assertIsObject(result["certificates"][1]);
 
-  // attributes of objects with "id" attribute should still have correct access rights applied
+  // properties of objects with "id" property should still have correct access rights applied
   expect(result["certificates"][0]["id"]).toBeNull();
   expect(result["certificates"][0]["name"]).toBe("Fair Trade");
   expect(result["certificates"][0]["link"]).toBe("https://www.fairtrade.net/");
@@ -149,12 +138,9 @@ test("productpassport without schema and access_full.json", () => {
 });
 
 test("path notation", () => {
-  const result = filter({
-    obj: { id: "1", address: { street: "some street", zip: "12345" } },
-    accessRights: { "1": ["address.zip"] },
-    digitsAccess: {},
-    pseudonymization: {},
-  }).obj;
+  const result = filter({ id: "1", address: { street: "some street", zip: "12345" } }, [
+    { objectId: "1", propertyAccess: ["address.zip"] },
+  ]).obj;
 
   assertIsObject(result);
   assertIsObject(result["address"]);
@@ -163,12 +149,9 @@ test("path notation", () => {
 });
 
 test("path notation with *", () => {
-  const result = filter({
-    obj: { id: "1", address: { street: "some street", zip: "12345" } },
-    accessRights: { "1": ["address.*"] },
-    digitsAccess: {},
-    pseudonymization: {},
-  }).obj;
+  const result = filter({ id: "1", address: { street: "some street", zip: "12345" } }, [
+    { objectId: "1", propertyAccess: ["address.*"] },
+  ]).obj;
 
   assertIsObject(result);
   assertIsObject(result["address"]);
@@ -177,12 +160,9 @@ test("path notation with *", () => {
 });
 
 test("path notation with **", () => {
-  const result = filter({
-    obj: { id: "1", user: { address: { street: "some street", zip: "12345" } } },
-    accessRights: { "1": ["user.**"] },
-    digitsAccess: {},
-    pseudonymization: {},
-  }).obj;
+  const result = filter({ id: "1", user: { address: { street: "some street", zip: "12345" } } }, [
+    { objectId: "1", propertyAccess: ["user.**"] },
+  ]).obj;
 
   assertIsObject(result);
   assertIsObject(result["user"]);
@@ -192,12 +172,9 @@ test("path notation with **", () => {
 });
 
 test("jsonpath", () => {
-  const result = filter({
-    obj: { id: "1", user: { address: { street: "some street", zip: "12345", country: "Germany" } } },
-    accessRights: { "1": ["$.user.address[street,zip]"] },
-    digitsAccess: {},
-    pseudonymization: {},
-  }).obj;
+  const result = filter({ id: "1", user: { address: { street: "some street", zip: "12345", country: "Germany" } } }, [
+    { objectId: "1", propertyAccess: ["$.user.address[street,zip]"] },
+  ]).obj;
 
   assertIsObject(result);
   assertIsObject(result["user"]);
@@ -208,8 +185,8 @@ test("jsonpath", () => {
 });
 
 test("jsonpath 2", () => {
-  const result = filter({
-    obj: {
+  const result = filter(
+    {
       id: "1",
       user: {
         addresses: [
@@ -218,10 +195,8 @@ test("jsonpath 2", () => {
         ],
       },
     },
-    accessRights: { "1": ["$.user.addresses[?(@.zip == '12345')][street,zip]"] },
-    digitsAccess: {},
-    pseudonymization: {},
-  }).obj;
+    [{ objectId: "1", propertyAccess: ["$.user.addresses[?(@.zip == '12345')][street,zip]"] }],
+  ).obj;
 
   assertIsObject(result);
   assertIsObject(result["user"]);
@@ -240,27 +215,26 @@ test("invalid schema", () => {
   jest.spyOn(console, "warn").mockImplementation();
 
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  filter({
-    obj: { id: "1", address: { street: "some street", zip: "12345" } },
-    accessRights: { "1": ["address.zip"] },
-    digitsAccess: {},
-    pseudonymization: {},
-    schema: { type: "string" },
-  }).obj;
+  filter(
+    { id: "1", address: { street: "some street", zip: "12345" } },
+    [{ objectId: "1", propertyAccess: ["address.zip"] }],
+    { type: "string" },
+  ).obj;
 
   expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("schema invalid"), expect.any(Array));
 });
 
 test("array with multipe schemas", () => {
-  const result = filter({
-    obj: [
+  const result = filter(
+    [
       { first_id: "1", a: "a", b: "b" },
       { second_id: "2", a: "a", b: "b" },
     ],
-    accessRights: { "1": ["a"], "2": ["b"] },
-    digitsAccess: {},
-    pseudonymization: {},
-    schema: {
+    [
+      { objectId: "1", propertyAccess: ["a"] },
+      { objectId: "2", propertyAccess: ["b"] },
+    ],
+    {
       type: "array",
       items: {
         oneOf: [
@@ -269,7 +243,7 @@ test("array with multipe schemas", () => {
         ],
       },
     },
-  }).obj;
+  ).obj;
 
   assertIsArray(result);
   assertIsObject(result[0]);
@@ -284,13 +258,13 @@ test("array with multipe schemas", () => {
 test("id of type object", () => {
   jest.spyOn(console, "warn").mockImplementation();
 
-  const result = filter({
-    obj: { id: { id: "1" }, address: { street: "some street", zip: "12345" } },
-    accessRights: { "1": ["**"] },
-    digitsAccess: {},
-    pseudonymization: {},
-  }).obj;
-
+  const result = filter(
+    {
+      id: { id: "2" },
+      address: { street: "some street", zip: "12345" },
+    },
+    [{ objectId: "1", propertyAccess: ["**"] }],
+  ).obj;
   assertIsObject(result);
   assertIsObject(result["address"]);
   expect(result["address"]["zip"]).toBeNull();

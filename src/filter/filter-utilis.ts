@@ -1,7 +1,6 @@
 import { JSONPath } from "jsonpath-plus";
-import { Json } from "../types/types";
+import { AccessRights, Json } from "../types/types";
 import crypto from "crypto";
-import { AccessRights, DigitiAccessDefinition } from "./filter";
 
 export const accessRightForPath = (currentPath: string, accessRights: string[]): boolean => {
   const currentPathParts = currentPath.split(".");
@@ -20,20 +19,18 @@ export const accessRightForPath = (currentPath: string, accessRights: string[]):
 };
 
 export const evalJSONPathExpressions = (accessRights: AccessRights, object: Json): AccessRights => {
-  return Object.fromEntries(
-    Object.entries(accessRights).map(([key, value]) => [
-      key,
-      value?.flatMap((readProperty) => {
-        if (readProperty.startsWith("$")) {
-          if (!object) return [];
-          return JSONPath({ json: object, path: readProperty, resultType: "pointer" }).map(
-            (pointer: string) => pointer.replaceAll("/", ".").substring(1), //remove leading dot
-          );
-        }
-        return readProperty;
-      }),
-    ]),
-  );
+  return accessRights.map((accessRight) => ({
+    ...accessRight,
+    propertyAccess: accessRight.propertyAccess?.flatMap((readProperty) => {
+      if (readProperty.startsWith("$")) {
+        if (!object) return [];
+        return JSONPath({ json: object, path: readProperty, resultType: "pointer" }).map(
+          (pointer: string) => pointer.replaceAll("/", ".").substring(1), //remove leading dot
+        );
+      }
+      return readProperty;
+    }),
+  }));
 };
 
 export const replaceNthChar = (str: string, index: number, replacement: string = "*") => {
@@ -50,7 +47,7 @@ export const pseudonymize = (data: string): string => {
 
 export const mask = (
   toMask: string,
-  digitAccess: DigitiAccessDefinition[],
+  digitAccess: NonNullable<AccessRights[number]["digitsAccess"]>[string],
 ): { maskedCharacters: number[]; maskedString: string } => {
   const maskedCharacters: number[] = [];
   for (let i = 1; i <= toMask.length; i++) {

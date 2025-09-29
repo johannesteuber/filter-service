@@ -1,6 +1,6 @@
 "use server";
 
-import { AccessRule } from "@/types/types";
+import { DatentreuAccessRight } from "@/types/types";
 
 type FetchDatentreuObjectAccessRuleProps = {
   applicationId: string;
@@ -25,7 +25,8 @@ export const fetchDatentreuObjectAccessRule = async ({
     },
   );
   if (!res.ok) {
-    throw new Error(`Failed to fetch object id: ${res.statusText}`);
+    console.log(await res.json());
+    throw new Error(`Failed to fetch object id`);
   }
   const json = await res.json();
   return json;
@@ -44,8 +45,6 @@ export const fetchDatentreuObjectAccessRules = async ({
   identityId,
   objectIds,
 }: FetchDatentreuObjectAccessRulesProps) => {
-  console.log(`https://fgac.datentreu.de/application/${applicationId}/access/?identityId=${identityId}&requestedById=${identityId}`)
-  console.log(objectIds)
   const res = await fetch(
     `https://fgac.datentreu.de/application/${applicationId}/access/?identityId=${identityId}&requestedById=${identityId}`,
     {
@@ -53,7 +52,6 @@ export const fetchDatentreuObjectAccessRules = async ({
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
-
       },
       body: JSON.stringify({
         objectIds,
@@ -61,8 +59,12 @@ export const fetchDatentreuObjectAccessRules = async ({
     },
   );
   const json = await res.text();
-  console.log(json)
+  console.log(json);
   return json;
+};
+
+export type DatentreuAccessBody = DatentreuAccessRight["objectProperties"] & {
+  digitsAccess: DatentreuAccessRight["objectProperties"]["digitsAccess"];
 };
 
 type SetAccessRulesProps = {
@@ -70,7 +72,7 @@ type SetAccessRulesProps = {
   identityId: string;
   accessToken: string;
   objectId: string;
-  accessRule: AccessRule;
+  accessRules: DatentreuAccessBody;
   requestedById: string;
 };
 
@@ -79,7 +81,7 @@ export const createDatentreuAccessRules = async ({
   identityId,
   accessToken,
   objectId,
-  accessRule,
+  accessRules,
   requestedById,
 }: SetAccessRulesProps) => {
   const res = await fetch(
@@ -90,16 +92,12 @@ export const createDatentreuAccessRules = async ({
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        readProperties: accessRule.objectProperties.readProperties,
-        writeProperties: accessRule.objectProperties.writeProperties,
-        shareReadProperties: accessRule.objectProperties.shareReadProperties,
-        shareWriteProperties: accessRule.objectProperties.shareWriteProperties,
-      }),
+      body: JSON.stringify(accessRules),
     },
   );
 
   const json = await res.json();
+  console.log("createDatentreuAccessRules", json);
   return json;
 };
 
@@ -108,7 +106,7 @@ export const updateDatentreuAccessRules = async ({
   identityId,
   accessToken,
   objectId,
-  accessRule,
+  accessRules,
   requestedById,
 }: SetAccessRulesProps) => {
   const res = await fetch(
@@ -119,12 +117,7 @@ export const updateDatentreuAccessRules = async ({
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        readProperties: accessRule.objectProperties.readProperties,
-        writeProperties: accessRule.objectProperties.writeProperties,
-        shareReadProperties: accessRule.objectProperties.shareReadProperties,
-        shareWriteProperties: accessRule.objectProperties.shareWriteProperties,
-      }),
+      body: JSON.stringify(accessRules),
     },
   );
 

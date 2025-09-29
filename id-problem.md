@@ -7,8 +7,8 @@
 
 ## 1. replace the object with null
 
-## 2. look for fallback ids (attribute names that contain "id")
-only works if there is **exactly one** attribute which contains "id"
+## 2. look for fallback ids (property names that contain "id")
+only works if there is **exactly one** property which contains "id"
 
 BUT: still it could be an foreign key and not the id of the object itself
 
@@ -208,7 +208,7 @@ and
 **Obvious gotcha**: as soon as an object is somehow changed the access rules do not apply anymore because the hash changes
 
 ## 5. Integration of ABAC
-to define access rules based on attributes of the object
+to define access rules based on properties of the object
 e.g. if name == "Apfel": only the "name" property is allowed
 or if name == "Brine": the "name" and "produced" properties are allowed
 
@@ -218,7 +218,7 @@ an access rules for the first case could like like this
   "objectId": null,
   "objectEntityClass": "Ingredient",
   "identityId": "f7e1f51c-1dd6-40d1-8269-4055b99f6b2b",
-  "objectAttributes": [
+  "objectProperties": [
       {"key": "name", "comparison": "equals", "value": "Apfel"},
   ],
   "identityProperties": {

@@ -2,58 +2,52 @@
 
 import { filter } from "@/filter/filter";
 import { useEffect } from "react";
-import { AccessFile, Json } from "@/types/types";
+import { Json } from "@/types/types";
 import { analyzeApiResult } from "@/filter/analyze-api-result";
-import { fetchDatentreuObjectAccessRule } from "./actions/datentreu-access";
 import { AccessRightsSelection } from "../components/AccessRightsSelection";
 import { OutputEditor } from "../components/OutputEditor";
 import { ApiFileEditor } from "../components/ApiFileEditor";
 import { ApiSchemaEditor } from "../components/ApiSchemaEditor";
-import { AccessFileEditor } from "../components/AccessFileEditor";
-import { AccessFileSchema, AccessRuleSchema } from "../schemas/access-rule-schema";
-import {
-  transformPolicyMachineAccessRights,
-  transformPolicyMachineDigitsAccess,
-  transformPolicyMachinePseudonymization,
-} from "../policy-machine/transform-policy-machine-results";
 import { useAppContext } from "./contexts/AppContext";
 import { ApiFileSelection } from "@/components/ApiFileSelection";
 import { ApiSchemaFileSchema } from "@/schemas/api-file-schema-schema";
 import z from "zod";
 import { Logs } from "@/components/Logs";
+import { writeJsonLog } from "./actions/save-log";
+import { AccessRightsEditor } from "@/components/AccessRightsEditor";
+import { AccessRightsSchema } from "@/schemas/access-rule-schema";
+
+export function parseFile(obj: string, name: string): Json | undefined;
+export function parseFile<T extends z.ZodTypeAny>(obj: string, name: string, schema: T): z.infer<T> | undefined;
+export function parseFile<T extends z.ZodTypeAny>(
+  obj: string,
+  name: string,
+  schema?: T,
+): z.infer<T> | Json | undefined {
+  if (obj.trim() === "") return undefined;
+  try {
+    const json = JSON.parse(obj);
+    if (!schema) return json;
+    return schema.parse(json);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (e) {
+    throw new Error(`invalid ${name}`);
+  }
+}
 
 const HomeClient = () => {
   const {
-    accessTargets,
-    datentreuAccessToken,
-    datentreuApplicationId,
-    accessFileType,
-    datentreuIdentityId,
-    accessFile,
     apiFile,
     apiSchemaFile,
+    accessRights,
+    datentreuOtherIdentityId,
     setAccessTargets,
-    setAccessFile,
     setOutput,
     setError,
-    setIsLoading,
     setLogs,
     setFilterTime,
     displayError,
   } = useAppContext();
-
-  function parseFile(obj: string, name: string): Json | undefined;
-  function parseFile<T extends z.ZodTypeAny>(obj: string, name: string, schema: T): z.infer<T> | undefined;
-  function parseFile<T extends z.ZodTypeAny>(obj: string, name: string, schema?: T): z.infer<T> | Json | undefined {
-    if (obj.trim() === "") return undefined;
-    try {
-      const json = JSON.parse(obj);
-      if (!schema) return json;
-      return schema.parse(json);
-    } catch (e) {
-      displayError(`invalid ${name}`, e);
-    }
-  }
 
   //
   // ANALYZE API FILE FOR ACCESS TARGETS
@@ -71,81 +65,36 @@ const HomeClient = () => {
   }, [apiFile, apiSchemaFile]);
 
   //
-  // FETCH ACCESS RIGHTS IF ACCESS FILE TYPE IS DATENTREU
-  // => sets AccessFile
-  //
-  useEffect(() => {
-    const fetchAccessRights = async () => {
-      if (!datentreuAccessToken || !datentreuApplicationId || !datentreuIdentityId) {
-        return;
-      }
-      setIsLoading((prev) => ({
-        ...prev,
-        access: true,
-      }));
-      const accessRights: AccessFile = [];
-
-      for (const accessTarget of accessTargets) {
-        if (!accessTarget.id || typeof accessTarget.id !== "string") continue;
-        try {
-          const res = await fetchDatentreuObjectAccessRule({
-            accessToken: datentreuAccessToken,
-            applicationId: datentreuApplicationId,
-            identityId: datentreuIdentityId,
-            objectId: accessTarget.id,
-          });
-          const rule = AccessRuleSchema.parse(res);
-          accessRights.push(rule);
-          console.log(res);
-        } catch (e) {
-          console.error("access rights not found", e);
-        }
-      }
-      setAccessFile(JSON.stringify(accessRights, null, 2));
-      setIsLoading((prev) => ({
-        ...prev,
-        access: false,
-      }));
-      /*
-        // ENDPOINT CURRENTLY NOT WORKING (because of body in GET request)
-        const rules = await fetchDatentreuObjectAccessRules({
-          accessToken: datentreuAccessToken,
-          applicationId: datentreuApplicationId,
-          identityId: datentreuIdentityId,
-          objectIds: objectIdentifiers.filter((o) => o.type === "id").map((o) => o.id),
-        });
-        */
-    };
-
-    if (accessFileType === "datentreu") {
-      fetchAccessRights();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessTargets, accessFileType, datentreuAccessToken, datentreuApplicationId, datentreuIdentityId]);
-
-  //
   // FILTER
   //
   useEffect(() => {
-    const parsedAccessJson = parseFile(accessFile, "access file", AccessFileSchema);
-    const apiJSON = parseFile(apiFile, "api file");
-    const parsedSchemaJson = parseFile(apiSchemaFile, "api schema", ApiSchemaFileSchema);
-
-    if (!parsedAccessJson || !apiJSON) {
-      return;
-    }
-
     try {
-      const startTime = performance.now();
-      const TYPE = "readProperties";
+      const accessRightsParsed = parseFile(accessRights, "access rights", AccessRightsSchema);
+      if (!accessRightsParsed) {
+        setError("Invalid access rights");
+        return;
+      }
+      const apiJSON = parseFile(apiFile, "api file");
+      const parsedSchemaJson = parseFile(apiSchemaFile, "api schema", ApiSchemaFileSchema);
 
-      const { obj: output, logs } = filter({
-        accessRights: transformPolicyMachineAccessRights(parsedAccessJson, TYPE),
-        digitsAccess: transformPolicyMachineDigitsAccess(parsedAccessJson, TYPE),
-        pseudonymization: transformPolicyMachinePseudonymization(parsedAccessJson),
-        obj: apiJSON,
-        schema: parsedSchemaJson,
-      });
+      const startTime = performance.now();
+
+      const originalObject = JSON.parse(JSON.stringify(apiJSON));
+
+      const { obj: output, logs } = filter(apiJSON, accessRightsParsed, parsedSchemaJson);
+
+      const timeStamp = new Date().toISOString();
+      const log = {
+        originalObject,
+        accessRights: accessRightsParsed,
+        filteredObject: output,
+        logs,
+        timeStamp,
+        subjectId: datentreuOtherIdentityId ?? undefined,
+      };
+
+      writeJsonLog(log, timeStamp + ".json");
+
       const endTime = performance.now();
       setFilterTime(endTime - startTime);
       setLogs(logs);
@@ -156,11 +105,16 @@ const HomeClient = () => {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessFile, apiFile, apiSchemaFile]);
+  }, [accessRights, apiFile, apiSchemaFile]);
 
   return (
     <div className="max-w-6xl mx-auto p-6 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6">Filter Service</h1>
+      <h1 className="text-3xl font-bold">Filterservice</h1>
+      <p className="text-gray-500 dark:text-gray-400 mb-6">
+        developed in the context of the bachelor thesis on the topic:
+        <br />
+        {'"'}Datentreuhänder: Entwicklung eines generischen Filterservice für JSON-Daten von Web-APIs{'"'}
+      </p>
 
       <div className="flex flex-col gap-4">
         <AccessRightsSelection />
@@ -169,7 +123,7 @@ const HomeClient = () => {
 
       <ApiFileEditor />
       <ApiSchemaEditor />
-      <AccessFileEditor />
+      <AccessRightsEditor />
       <OutputEditor />
 
       <Logs />

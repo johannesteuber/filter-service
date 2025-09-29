@@ -53,7 +53,7 @@ export const createDatentreuObject = async ({ applicationId, identityId, accessT
     },
   );
   const json = await res.json();
-
+  console.log("createDatentreuObject", json)
   return json
 }
 

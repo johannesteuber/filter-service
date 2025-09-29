@@ -12,16 +12,14 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 
 export const ApiFileEditor = () => {
   const {
-    accessFileType,
+    accessRightsSource,
     accessTargets,
     apiFile,
     datentreuApplicationId,
     datentreuAccessToken,
-    datentreuRequestedById,
+    datentreuOwnerIdentityId,
     isLoading,
-
     theme,
-
     setAPIFile,
   } = useAppContext();
   return (
@@ -59,7 +57,7 @@ export const ApiFileEditor = () => {
                   <CardContent>
                     <p className="text-xs text-gray-500">{o.class}</p>
                     <p className="text-ellipsis overflow-hidden line-clamp-1 break-all">{o.id}</p>
-                    <p className="text-xs">{o.attributes.join(", ")}</p>
+                    <p className="text-xs">{o.properties.join(", ")}</p>
                   </CardContent>
                 </Card>
               );
@@ -67,28 +65,28 @@ export const ApiFileEditor = () => {
         </div>
       </div>
 
-      {accessFileType === "datentreu" && (
+      {accessRightsSource === "datentreu" && (
         <Button
           onClick={async () => {
             for (const accessTarget of accessTargets) {
               if (!accessTarget.id || typeof accessTarget.id !== "string") continue;
               const res = await createDatentreuObject({
                 applicationId: datentreuApplicationId,
-                identityId: datentreuRequestedById,
+                identityId: datentreuOwnerIdentityId,
                 accessToken: datentreuAccessToken,
                 objectId: accessTarget.id,
                 objectEntityClass: accessTarget.class ?? accessTarget.id,
-                properties: accessTarget.attributes,
+                properties: accessTarget.properties,
               });
 
               if (res.status === 400 && res.message?.endsWith("already exists")) {
                 await updateDatentreuObject({
                   applicationId: datentreuApplicationId,
-                  identityId: datentreuRequestedById,
+                  identityId: datentreuOwnerIdentityId,
                   accessToken: datentreuAccessToken,
                   objectId: accessTarget.id,
                   objectEntityClass: accessTarget.class ?? accessTarget.id,
-                  properties: accessTarget.attributes,
+                  properties: accessTarget.properties,
                 });
               }
             }

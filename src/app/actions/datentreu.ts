@@ -21,6 +21,7 @@ export const createDatentreuApplication = async (applicationId: string, identity
     },
   );
   if (!res.ok) {
+    console.error(await res.json())
     throw new Error(`Failed to create application: ${res.statusText}`)
   }
   const json = await res.json();
