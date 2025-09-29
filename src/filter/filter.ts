@@ -11,7 +11,7 @@ export interface FilterProps {
   digitsAccess: DigitAccess;
   pseudonymization: Pseudonymization;
   obj: Json;
-  schema?: ApiSchema | ApiSchema[];
+  schema?: ApiSchema;
 }
 
 export const filter = ({
@@ -82,6 +82,5 @@ export const filter = ({
       }
     };
   });
-
   return { logs, obj };
 };

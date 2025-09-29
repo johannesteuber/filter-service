@@ -5,19 +5,17 @@ export const resolveAccessTarget = (object: JSONObject, schema?: ApiSchema): Acc
   if (schema && schema && schema.type !== "object") {
     throw new Error("Invalid schema");
   }
-  if (schema) {
-    idKey = schema.uniqueIdentifier ?? "id";
-    if (!idKey) {
-      return { id: undefined, class: schema.objectClass };
-    }
+  if (schema && schema.uniqueIdentifier) {
+    idKey = schema.uniqueIdentifier;
   }
 
   for (const [key, value] of Object.entries(object)) {
     if (key !== idKey) continue;
-    if (typeof value !== "string") {
-      throw new Error(`id ${key}:${value} must be a string, ${JSON.stringify(object)}`)
+    if (typeof value !== "string" && typeof value !== "number") {
+      console.warn(`ID ${key}:${value} must be a string or a number`);
+      return { id: undefined, class: schema?.objectClass };
     }
     return { id: value, class: schema?.objectClass };
   }
   return { id: undefined, class: undefined };
-}
+};

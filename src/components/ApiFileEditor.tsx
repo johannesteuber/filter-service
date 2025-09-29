@@ -71,7 +71,7 @@ export const ApiFileEditor = () => {
         <Button
           onClick={async () => {
             for (const accessTarget of accessTargets) {
-              if (!accessTarget.id) continue;
+              if (!accessTarget.id || typeof accessTarget.id !== "string") continue;
               const res = await createDatentreuObject({
                 applicationId: datentreuApplicationId,
                 identityId: datentreuRequestedById,

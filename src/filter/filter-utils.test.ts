@@ -1,5 +1,3 @@
-// src/math.test.ts
-
 import { accessRightForPath } from "./filter-utilis";
 
 describe('accessRightForPath with empty access rights', () => {

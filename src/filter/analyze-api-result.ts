@@ -3,7 +3,7 @@ import { Json, ApiSchema, AccessTarget } from "../types/types";
 
 export type AccessTargetWithAttributes = AccessTarget & { attributes: string[] };
 
-export const analyzeApiResult = (obj: Json, schema?: ApiSchema | ApiSchema[]): AccessTargetWithAttributes[] => {
+export const analyzeApiResult = (obj: Json, schema?: ApiSchema): AccessTargetWithAttributes[] => {
   const accessTargets: AccessTargetWithAttributes[] = [];
 
   traverseDocument(obj, schema, (object) => {

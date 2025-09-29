@@ -10,8 +10,7 @@ export const accessRightForPath = (currentPath: string, accessRights: string[]):
     if (matchingAccessRights.find((r) => r[i] === "**")) {
       return true;
     }
-    const currentPathPart = currentPathParts[i];
-    matchingAccessRights = matchingAccessRights.filter((r) => r[i] === currentPathPart || r[i] === "*");
+    matchingAccessRights = matchingAccessRights.filter((r) => r[i] === currentPathParts[i] || r[i] === "*");
   }
 
   if (matchingAccessRights.filter((m) => m.length === currentPathParts.length).length > 0) {
@@ -38,7 +37,7 @@ export const evalJSONPathExpressions = (accessRights: AccessRights, object: Json
 };
 
 export const replaceNthChar = (str: string, index: number, replacement: string = "*") => {
-  if (index < 0 || index >= str.length) return str; // out of bounds
+  if (index < 0 || index >= str.length) return str;
   return str.substring(0, index) + replacement + str.substring(index + 1);
 };
 

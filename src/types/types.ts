@@ -34,4 +34,4 @@ export type JSONObject = {
   [key: string]: Json;
 }
 
-export type AccessTarget = { id: string | undefined, class: string | undefined }
+export type AccessTarget = { id: string | number | undefined, class: string | undefined }

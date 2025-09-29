@@ -86,7 +86,7 @@ const HomeClient = () => {
       const accessRights: AccessFile = [];
 
       for (const accessTarget of accessTargets) {
-        if (!accessTarget.id) continue;
+        if (!accessTarget.id || typeof accessTarget.id !== "string") continue;
         try {
           const res = await fetchDatentreuObjectAccessRule({
             accessToken: datentreuAccessToken,

@@ -1,6 +1,5 @@
 import * as z from "zod";
 
-
 const StringSchemaSchema = z.object({
   type: z.literal("string"),
 });
@@ -13,18 +12,18 @@ const ObjectSchemaSchema = z.object({
   type: z.literal("object"),
   uniqueIdentifier: z.string().optional(),
   objectClass: z.string(),
+  required: z.array(z.string()).optional(),
   get properties() {
-    return z.record(z.string(), ApiSchemaSchema).optional()
+    return z.record(z.string(), ApiSchemaSchema).optional();
   },
 });
 
 const ArraySchemaSchema = z.object({
   type: z.literal("array"),
   get items() {
-    return z.union([ApiSchemaSchema, z.array(ApiSchemaSchema)]);
-  }
+    return z.union([ApiSchemaSchema, z.object({ oneOf: z.array(ApiSchemaSchema) })]);
+  },
 });
-
 
 export const ApiSchemaSchema = z.union([
   StringSchemaSchema,
@@ -33,8 +32,4 @@ export const ApiSchemaSchema = z.union([
   ArraySchemaSchema,
 ]);
 
-export const ApiSchemaFileSchema = z.union([
-  z.undefined(),
-  ApiSchemaSchema
-]);
-
+export const ApiSchemaFileSchema = z.union([z.undefined(), ApiSchemaSchema]);

@@ -16,13 +16,13 @@ export type TraverseObjectAttributesCallback = ({
 
 export const traverseDocument = (
   obj: Json,
-  schema: ApiSchema | ApiSchema[] | undefined,
+  schema: ApiSchema | undefined,
   objectCallback: (p: TraverseObjectCallbackProps) => TraverseObjectAttributesCallback | void,
   path = "",
-  top = true,
+  isRoot = true,
 ) => {
   // validate data based on schema
-  if (schema && top) {
+  if (schema && isRoot) {
     const validate = ajv.compile(schema);
     const valid = validate(obj);
     if (!valid) {
@@ -33,9 +33,11 @@ export const traverseDocument = (
   }
 
   if (Array.isArray(obj)) {
+    if (schema && schema.type !== "array") throw new Error("Invalid schema, expected array");
     for (let i = 0; i < obj.length; i++) {
       const arrayItemPath = mergePath(path, String(i));
-      const arrayItemSchema = Array.isArray(schema) ? findMatchingSchema(obj[i], schema) : schema;
+      const arrayItemSchema =
+        schema?.items && ("oneOf" in schema?.items ? findMatchingSchema(obj[i], schema.items.oneOf) : schema?.items);
       traverseDocument(obj[i], arrayItemSchema, objectCallback, arrayItemPath, false);
     }
   } else if (typeof obj === "object" && obj !== null) {
@@ -54,26 +56,20 @@ export const traverseDocument = (
       }
 
       const attributeSchema = schema?.properties?.[key];
-      const objectSchema = attributeSchema?.type === "array" ? attributeSchema.items : attributeSchema;
-      traverseDocument(value, objectSchema, objectCallback, attributePath, false);
+      traverseDocument(value, attributeSchema, objectCallback, attributePath, false);
     }
   }
 };
 
 export const mergePath = (path: string, key: string) => [path, key].filter(Boolean).join(".");
 
-export const findMatchingSchema = (obj: Json, schemas: ApiSchema[]): ApiSchema => {
-  schemaLoop: for (const schema of schemas) {
-    if (schema.type === "string" && typeof obj === "string") return schema;
-    if (schema.type === "integer" && typeof obj === "number") return schema;
-    //if (schema.type === "boolean" && typeof obj === "boolean") return schema;
-    if (schema.type === "object") {
-      if (typeof obj !== "object" || obj === null) continue;
-      for (const [key] of Object.entries(obj)) {
-        if (!schema.properties?.[key]) continue schemaLoop;
-      }
+export const findMatchingSchema = (obj: Json, schemas: ApiSchema[]): ApiSchema | undefined => {
+  for (const schema of schemas) {
+    const validator = ajv.compile(schema);
+    if (validator(obj)) {
+      return schema;
     }
-    return schema;
   }
-  throw new Error("No matching schema found");
+  console.warn("No matching schema found");
+  return undefined;
 };
